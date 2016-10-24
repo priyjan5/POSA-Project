@@ -1,0 +1,6 @@
+Steps
+Step 1: Install Elasticsearch (install_elasticsearch)
+Step 2: Install Kibana (install_kibana)
+Step 3: Instlal Logstash (install_logstash)
+Step 4: Install Nginx (install_nginx)
+Step 5: Load Filebeat Index (load_filebeat_index)
