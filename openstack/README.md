@@ -31,5 +31,5 @@
   * Creates a new instance based on given options
   
 ## Reference
-http://docs.openstack.org/developer/python-novaclient/ref/v2/client.html
-http://docs.openstack.org/user-guide/sdk-compute-apis.html#create-server-api-v2
+- http://docs.openstack.org/developer/python-novaclient/ref/v2/client.html
+- http://docs.openstack.org/user-guide/sdk-compute-apis.html#create-server-api-v2
