@@ -12,7 +12,7 @@
 - getpass
 - from novaclient.client import Client
 
-## functions
+## Functions
 ### Lists
 - list_servers
   * Lists running instances
