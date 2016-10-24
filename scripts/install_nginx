@@ -1,0 +1,4 @@
+#Install nginx and apache2-utils
+sudo apt-get install nginx apache2-utils
+
+sudo htpasswd -c /etc/nginx/htpasswd.users toradmin

@@ -1,0 +1,29 @@
+#Create Logstash source list
+echo '[!] Creating logstash source list'
+echo 'deb http://packages.elastic.co/logstash/2.2/debian stable main' | sudo tee /etc/apt/sources.list.d/logstash-2.2.x.list
+
+#Update apt
+echo '[!] Updating apt database'
+sudo apt-get update > /dev/null
+
+#Installing Logstash
+echo '[!] Installing Logstash'
+sudo apt-get install logstash
+
+#Generate SSL Certificates
+sudo mkdir -p /etc/pki/tls/certs
+sudo mkdir /etc/pki/tls/private
+
+
+#Pull down and deploy config file
+wget 172.16.106.155/logstash.tar.gz
+tar -xf logstash.tar.gz
+mv logstash.tar.gz /etc/
+
+#Deploy open SSL Config
+mv /etc/logstash/openssl.cnf /etc/ssl/
+
+#Generate SSL certificate and private key in the approiate locations (/etc/pki/tls/)
+cd /etc/pki/tls
+sudo openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout private/logstash-forwarder.key -out certs/logstash-forwarder.crt
+
