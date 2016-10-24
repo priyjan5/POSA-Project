@@ -1,0 +1,10 @@
+#######################################
+#	Deploy ELK Stack	      #
+#######################################
+
+./install_elasticsearch
+./install_kibana
+./install_logstash
+./install_nginx
+./load_kibana_dashboards
+./load_filebeat_index

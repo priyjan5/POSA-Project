@@ -1,0 +1,13 @@
+
+#Download sample dashbaords to home directory
+cd ~
+wget https://download.elastic.co/beats/dashboards/beats-dashboards-1.1.0.zip
+
+#Unizp the dashboards
+sudo apt-get install -y unzip > /dev/null
+unzip beats-dashboards-*.zip
+
+#Load the dashboards
+cd beats-dashboards-*
+./load.sh
+
