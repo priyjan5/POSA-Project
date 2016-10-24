@@ -1,30 +1,33 @@
 # Openstack Tor Project
 
 ## Version
--Python 3.5.2
--Pip 8.1.2
+- Python 3.5.2
+- Pip 8.1.2
 
 ## Dependencies
--python-openstackclient
+- python-openstackclient
 
 ## Imports
--time
--getpass
--from novaclient.client import Client
+- time
+- getpass
+- from novaclient.client import Client
 
 ## functions
 ### Lists
--list_servers
+- list_servers
   * Lists running instances
--list_images
+
+- list_images
   * Lists available images
--list_flavors
+
+- list_flavors
   * Lists available flavors
--list_networks
+
+- list_networks
   * Lists available networks
 
 ### Creates
--create_instance
+- create_instance
   * Creates a new instance based on given options
   
 ## Reference

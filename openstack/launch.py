@@ -1,10 +1,24 @@
+"""
+   file: launch.py
+   desc: Openstack Tor Network builder backend
+"""
+
 import time
 import getpass
 from novaclient.client import Client
 
 # Connection functions
 
-def test():
+def get_auth():
+    """
+       Dictionary for user authentication parameters
+
+       Args:
+           none
+
+       Returns:
+           auth - dictionary for authenticating to openstack keyauth
+    """
     username = input("Enter username: ")
     password = getpass.getpass("Enter password: ")
     username = username + "@ad.rit.edu"
@@ -15,32 +29,31 @@ def test():
     auth['password'] = password
     auth['auth_url'] = 'https://acopenstack.rit.edu:5000/v2.0'
     auth['project_id'] = 'jrh7130-multi'
-    nova_client = Client(**auth)
-    return nova_client
-
-def get_auth():
-    username = input("Enter username: ")
-    password = getpass.getpass("Enter password: ")
-    username = username + "@ad.rit.edu"
-    auth = {}
-    auth['verify'] = False
-    auth['username'] = username
-    auth['password'] = password
-    auth['auth_url'] = 'https://acopenstack.rit.edu:5000/v2.0'
-    auth['project_id'] = 'b4cac92e8b0147e29d1af5c3d05968de'
     return auth
 
 def create_connection():
+    """
+        Creates a nova client with given authentication parameters
+
+        Args:
+           none
+
+        Returns:
+           nova_client - object to query openstack
+    """
     auth = get_auth()
-    conn = connection.Connection(**auth)
-    return conn
+    nova_client = Client(**auth)
+    return nova_client
 
 # List functions
 
 def list_hub(client):
+    """
+       Menu for reporting related functions
+    """
     while(True):
-        print("\nBackend List Functions")
-        print("1. List Servers")
+        print("\nBackend Reporting Functions")
+        print("1. List Instances")
         print("2. List Images")
         print("3. List Flavors")
         print("4. List Networks")
@@ -50,7 +63,7 @@ def list_hub(client):
         except:
             case = 6
         if case == 1:
-            list_servers(client)
+            list_instances(client)
         elif case == 2:
             list_images(client)
         elif case == 3:
@@ -62,32 +75,96 @@ def list_hub(client):
         else:
             print("\nInvalid option")
 
-def list_servers(client):
-    print("List Servers: ")
+def list_instances(client):
+    """
+       Lists available instances
+
+       Args:
+           client - nova client object
+
+       Returns:
+           none
+    """
+    print("\nList Instances: ")
     for line in client.servers.list():
         print(line)
 
 def list_images(client):
-    print("List Images: ")
+    """
+       Lists available images
+
+       Args:
+           client - nova client object
+
+        Returns:
+            none
+    """
+    print("\nList Images: ")
     for line in client.images.list():
         print(line)
 
 def list_flavors(conn):
-    print("List Flavors: ")
+    """
+       Lists available flavors
+
+       Args:
+           client - nova client object
+
+        Returns:
+            none
+    """
+    print("\nList Flavors: ")
     for line in client.flavors.list():
         print(line)
 
 def list_networks(client):
-    print("List Networks: ")
+    """
+       Lists available networks
+
+       Args:
+           client - nova client object
+
+        Returns:
+            none
+    """
+    print("\nList Networks: ")
     for line in client.networks.list():
         print(line)
 
-# Make functions
+# Instance functions
 
-def create_hub(client):
-    create_instance(client)
+def instance_hub(client):
+    """
+       Menu for instance related functions
+    """
+    while(True):
+        print("\nBackend Create Functions")
+        print("1. Create Instance")
+        print("2. Return to Main Menu")
+        try:
+            case = int(input("Enter choice: "))
+        except:
+            case = 6
+        if case == 1:
+            create_instance(client)
+        elif case == 2:
+            return
+        else:
+            print("\nInvalid option")
+    
 
 def create_instance(client):
+    """
+       Creates an instance with given specs
+
+       Args:
+           name_in - name of new instance
+           img_in - name of image to use
+           flav_in - name of flavor to use
+
+        Returns:
+            none
+    """
     try:
         name_in = input("Enter instance name: ")
         img_in = input("Enter image to use: ")
@@ -98,20 +175,17 @@ def create_instance(client):
         nics = [{'net-id': net.id}]
         instance = client.servers.create(name=name_in, image=image,
                                       flavor=flavor, nics=nics)
-        print("Sleeping for 5s after create command")
-        print("List of VMs")
         time.sleep(5)
-        print(client.servers.list())
     finally:
         print("Instance Created")
     
 
 if __name__ == '__main__':
-    client = test()
+    client = create_connection()
     while(True):
-        print("\nOpenstack SDK Backend")
-        print("1. Lists")
-        print("2. Creates")
+        print("\nOpenstack SDK Backend - Main Menu")
+        print("1. Reporting Options")
+        print("2. Instance Options")
         print("3. Exit")
         try:
             case = int(input("Enter choice: "))
@@ -120,7 +194,7 @@ if __name__ == '__main__':
         if case == 1:
             list_hub(client)
         elif case == 2:
-            create_hub(client)
+            instance_hub(client)
         elif case == 3:
             print("Goodbye")
             exit()
