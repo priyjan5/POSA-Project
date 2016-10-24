@@ -1,8 +1,0 @@
-#######################################
-#	Deploy ELK Stack	      #
-#######################################
-
-./install_elasticsearch
-./install_kibana
-./install_logstash
-
