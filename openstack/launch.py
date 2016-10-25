@@ -138,9 +138,11 @@ def instance_hub(client):
        Menu for instance related functions
     """
     while(True):
-        print("\nBackend Create Functions")
+        print("\nBackend Instance Functions")
         print("1. Create Instance")
-        print("2. Return to Main Menu")
+        print("2. Terminate Instance")
+        print("3. Rename Instance")
+        print("4. Return to Main Menu")
         try:
             case = int(input("Enter choice: "))
         except:
@@ -148,6 +150,10 @@ def instance_hub(client):
         if case == 1:
             create_instance(client)
         elif case == 2:
+            terminate_instance(client)
+        elif case == 3:
+            rename_instance(client)
+        elif case == 4:
             return
         else:
             print("\nInvalid option")
@@ -155,7 +161,7 @@ def instance_hub(client):
 
 def create_instance(client):
     """
-       Creates an instance with given specs
+       Creates an instance of given name, image and flavor
 
        Args:
            name_in - name of new instance
@@ -173,12 +179,64 @@ def create_instance(client):
         flavor = client.flavors.find(name=flav_in)
         net = client.networks.find(label="Shared")
         nics = [{'net-id': net.id}]
-        instance = client.servers.create(name=name_in, image=image,
-                                      flavor=flavor, nics=nics)
+        instance = client.servers.create(name=name_in,
+                                         image=image,
+                                         flavor=flavor,
+                                         nics=nics)
         time.sleep(5)
     finally:
         print("Instance Created")
-    
+
+def terminate_instance(client):
+    """
+       Terminates an instance of given name
+
+       Args:
+          name_in - name of instance to terminate
+
+       Returns:
+          None
+    """
+    servers_list = client.servers.list()
+    name_in = input("Enter instance name: ")
+    server_exists = False
+
+    for s in servers_list:
+        if s.name == name_in:
+            server_exists = True
+            break
+    if not server_exists:
+        print("%s does not exist" % name_in)
+    else:
+        print("Deleting %s" % name_in)
+        client.servers.delete(s)
+
+def rename_instance(client):
+    """
+       Renames an existing instance of given name with new name
+
+       Args:
+          name_in - name of existing instance
+          new_name - new name for instance
+
+       Returns:
+          None
+    """
+    servers_list = client.servers.list()
+    name_in = input("Enter instance name: ")
+    server_exists = False
+
+    for s in servers_list:
+        if s.name == name_in:
+            server = client.servers.get(s.id)
+            server_exists = True
+            break
+    if not server_exists:
+        print("%s does not exist" % name_in)
+    else:
+        print("Renaming %s" % name_in)
+        new_name = input("Enter new name for instance: ")
+        server.update(server=new_name)
 
 if __name__ == '__main__':
     client = create_connection()

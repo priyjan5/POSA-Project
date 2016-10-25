@@ -1,6 +1,6 @@
 # Openstack Tor Project
 
-## Version
+## Versions
 - Python 3.5.2
 - Pip 8.1.2
 
@@ -8,27 +8,33 @@
 - python-openstackclient
 
 ## Imports
-- time
-- getpass
+- import time
+- import getpass
 - from novaclient.client import Client
 
 ## Functions
-### Lists
+### Reporting
 - list_servers
   * Lists running instances
-
 - list_images
   * Lists available images
-
 - list_flavors
   * Lists available flavors
-
 - list_networks
   * Lists available networks
 
-### Creates
+### Instances
 - create_instance
-  * Creates a new instance based on given options
+  * Creates a new instance based on given name, image, flavor
+- terminate_instance 
+  * Terminates an instance based on given name
+  
+## TODO
+- Fix rename_instance
+- Add JSON input support
+- Make instance creation more configurable
+- Add support for updating instances post-creation
+- Add userdata field in create_instance to pass post-creation scripts
   
 ## Reference
 - http://docs.openstack.org/developer/python-novaclient/ref/v2/client.html
