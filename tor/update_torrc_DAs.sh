@@ -1,4 +1,4 @@
-sshpass -p "wordpass" scp tor@172.16.106.169:~/DAs .
+sshpass -p "wordpass" scp tor@${UTIL_SERVER}:~/DAs .
 
 while read p; do
   

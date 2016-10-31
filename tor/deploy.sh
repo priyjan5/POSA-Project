@@ -5,12 +5,14 @@ rm -r /var/lib/tor/keys
 rm -r /tor
 
 # Define Variables
-ROLE="DA"
+ROLE="RELAY"
 TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
-UTIL_SERVER=172.16.106.169
+UTIL_SERVER=172.19.240.116
 TORRC_CONFIG_DIR="/tor/config"
+
+export $UTIL_SERVER
 
 echo -e "\n========================================================"
 
@@ -126,14 +128,14 @@ if [ $ROLE == "DA" ]; then
 	FING=$(cat $TOR_DIR/fingerprint | awk -F " " '{print $2}')
 	SERVICE=$(grep "dir-address" $TOR_DIR/keys/* | awk -F " " '{print $2}')
 	
-	echo AUTH ${AUTH}
-	echo FING ${FING}
-	echo SERVICE ${SERVICE}
-	echo IP ${TOR_IP}
+	#echo AUTH ${AUTH}
+	#echo FING ${FING}
+	#echo SERVICE ${SERVICE}
+	#echo IP ${TOR_IP}
 	
-	TORRC="DirAuthority $TOR_NICKNAME orport=${TOR_ORPORT} not-v2 v3ident=$AUTH $SERVICE $FING"
+	TORRC="DirAuthority $TOR_NICKNAME orport=${TOR_ORPORT} no-v2 v3ident=$AUTH $SERVICE $FING"
 	
-	echo TORRC $TORRC
+	echo [!] TORRC $TORRC
 	echo $TORRC >> /etc/tor/torrc
 	echo "[!] Uploading DirAuthoirty torrc config to util server"
 	echo $TORRC | sshpass -p "wordpass" ssh tor@$UTIL_SERVER "cat >> ~/DAs"
@@ -211,7 +213,7 @@ fi
 /tor/update_torrc_DAs.sh
 
 # Add update_torrc_DAs.sh as a cron job running every minute
-*/1 * * * * /tor/update_torrc_DAs.sh
+#*/1 * * * * /tor/update_torrc_DAs.sh
 
 echo -e "\n========================================================"
 # display Tor version & torrc in log
