@@ -2,3 +2,5 @@
 sudo apt-get install nginx apache2-utils
 
 sudo htpasswd -c /etc/nginx/htpasswd.users toradmin
+
+sudo cp ../configs/nginx/nginx_reverse_proxy.conf /etc/nginx/sites-enabled/default

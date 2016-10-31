@@ -2,6 +2,7 @@
 #	Deploy ELK Stack	      #
 #######################################
 
+./update_apt
 ./install_elasticsearch
 ./install_kibana
 ./install_logstash

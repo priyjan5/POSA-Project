@@ -3,12 +3,12 @@
 #######################################
 
 #Creating kibana source list
-echo '[!] Creating Kibana source list'
-echo 'deb http://packages.elastic.co/kibana/4.4/debian stable main' | sudo tee -a /etc/apt/sources.list.d/kibana-4.4.x.list
+#echo '[!] Creating Kibana source list'
+#echo 'deb http://packages.elastic.co/kibana/4.4/debian stable main' | sudo tee -a /etc/apt/sources.list.d/kibana-4.4.x.list
 
 #Updating apt database
-echo '[!] Updating apt database'
-sudo apt-get -y update > /dev/null
+#echo '[!] Updating apt database'
+#sudo apt-get -y update > /dev/null
 
 #Installing Kibana
 echo '[!] Installing Kibana'
