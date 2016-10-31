@@ -21,7 +21,7 @@ echo -e "\n========================================================"
 ##############################
 
 echo "[!] Updating package manager"
-#apt-get update > /dev/null
+apt-get update > /dev/null
 
 echo "[!] Installing pwgen to generate hostnames"
 apt-get install -y pwgen > /dev/null
@@ -119,7 +119,7 @@ if [ $ROLE == "DA" ]; then
 	echo "[!] Generating Router Fingerprint"
 	tor --list-fingerprint --orport 1 \
     	--dirserver "x 127.0.0.1:1 ffffffffffffffffffffffffffffffffffffffff" \
-    	--datadirectory ${TOR_DIR} >> /dev/null
+    	--datadirectory ${TOR_DIR}
 
 	# Generate DirAuthority torrc line
 	echo "[!] Generating DirAuthority Line"
