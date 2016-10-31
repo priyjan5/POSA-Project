@@ -33,6 +33,8 @@ apt-get install -y tor > /dev/null
 echo "[!] Installing sshpass to auto login with scp"
 apt-get install -y sshpass > /dev/null
 
+sudo service tor stop
+chown root /var/lib/tor
 
 # Clone github repo
 echo "[!] Cloning GIT Repo"
