@@ -33,6 +33,7 @@ apt-get install -y tor > /dev/null
 echo "Installing sshpass to auto login with scp"
 apt-get install -y sshpass > /dev/null
 
+chown root /var/lib/tor
 
 # Generate Nickname
 RPW=$(pwgen -0A 5)
