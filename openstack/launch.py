@@ -1,5 +1,6 @@
 """
    file: launch.py
+   vers: 1.4
    desc: Openstack Tor Network builder backend
 """
 
@@ -7,20 +8,40 @@ import time
 import getpass
 from novaclient.client import Client
 
+
+# Logging functions
+
+def logger(access,session,debug,error):
+    """
+       TODO: implement
+    """
+    if access is not None:
+        # Log to access log
+    if session is not None:
+        # Log to session log
+    if debug is not None:
+        # Log to debug log
+    if error is not None:
+        # Log to error log
+
 # Connection functions
 
-def get_auth():
+def get_auth(username,password):
     """
+       TODO: remove hardcoded variables
+
        Dictionary for user authentication parameters
 
+       Function of:
+           create_connection
+
        Args:
-           none
+           username - RIT DCE username
+           password - RIT DCE password
 
        Returns:
            auth - dictionary for authenticating to openstack keyauth
     """
-    username = input("Enter username: ")
-    password = getpass.getpass("Enter password: ")
     username = username + "@ad.rit.edu"
     auth = {}
     auth['version'] = '2'
@@ -29,18 +50,29 @@ def get_auth():
     auth['password'] = password
     auth['auth_url'] = 'https://acopenstack.rit.edu:5000/v2.0'
     auth['project_id'] = 'jrh7130-multi'
+    if auth['insecure'] = True:
+        cert_warn = "Connection: SSL certificates being ignored"
+        logger(cert_warn,None,cert_warn,None)
     return auth
 
-def create_connection():
+def create_connection(username,password):
     """
         Creates a nova client with given authentication parameters
 
+        Function of:
+           main
+           web_launch
+           
         Args:
            none
 
         Returns:
            nova_client - object to query openstack
     """
+    if username is None:
+        username = input("Enter username: ")
+        password = getpass.getpass("Enter password: ")
+        logger("Client initialized by " + username + " from command line",None,None,None)
     auth = get_auth()
     nova_client = Client(**auth)
     return nova_client
@@ -50,6 +82,9 @@ def create_connection():
 def list_hub(client):
     """
        Menu for reporting related functions
+
+       Function of:
+          main
     """
     while(True):
         print("\nBackend Reporting Functions")
@@ -213,6 +248,8 @@ def terminate_instance(client):
 
 def rename_instance(client):
     """
+       TODO: implement
+
        Renames an existing instance of given name with new name
 
        Args:
@@ -238,8 +275,133 @@ def rename_instance(client):
         new_name = input("Enter new name for instance: ")
         server.update(server=new_name)
 
+# Web functions
+
+def create_dirauth(client,img,flav,net,size):
+    """
+       TODO: implement, add error catching
+    """
+    try:
+        for i in range(0,size):
+            name = "directory_authority" + str(i)
+            if img is None:
+                img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+                if i = 0:
+                    logger(None,None,"Directory Authority: No image name provided, defaulting to Ubuntu 14.04.4",None)
+            if flav is None:
+                flav = client.flavors.find(name="m1.tiny")
+                if i = 0:
+                    logger(None,None,"Directory Authority: No flavor specified, defaulting to m1.tiny",None)                
+            if net is None:
+                net = client.networks.find(label="Shared")
+                if i = 0:
+                    logger(None,None,"Directory Authority: No network specified, defaulting to Shared",None)
+            nics = [{'net-id': net.id}]
+            instance = client.servers.create(name=name,
+                                             image=image,
+                                             flavor=flavor,
+                                             nics=nics)
+            time.sleep(5)
+    finally:
+        logger(None,"Network: " + str(size) + "directory authorities created",None,None)
+
+def create_guardnode(client,img,flav,net,size):
+    """
+       TODO: implement, add error catching
+    """
+    try:
+        for i in range(0,size):
+            name = "guard_node" + str(i)
+            if img is None:
+                img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+                if i = 0:
+                    logger(None,None,"Guard node: No image name provided, defaulting to Ubuntu 14.04.4",None)
+            if flav is None:
+                flav = client.flavors.find(name="m1.tiny")
+                if i = 0:
+                    logger(None,None,"Guard node: No flavor specified, defaulting to m1.tiny",None)                
+            if net is None:
+                net = client.networks.find(label="Shared")
+                if i = 0:
+                    logger(None,None,"Guard node: No network specified, defaulting to Shared",None)
+            nics = [{'net-id': net.id}]
+            instance = client.servers.create(name=name,
+                                             image=image,
+                                             flavor=flavor,
+                                             nics=nics)
+            time.sleep(5)
+    finally:
+        logger(None,"Network: " + str(size) + "guard nodes created",None,None)
+
+def create_exitnode(client,img,flav,net,size):
+    """
+       TODO: implement, add error catching
+    """
+    try:
+        for i in range(0,size):
+            name = "exit_node" + str(i)
+            if img is None:
+                img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+                if i = 0:
+                    logger(None,None,"Exit node: No image name provided, defaulting to Ubuntu 14.04.4",None)
+            if flav is None:
+                flav = client.flavors.find(name="m1.tiny")
+                if i = 0:
+                    logger(None,None,"Exit node: No flavor specified, defaulting to m1.tiny",None)                
+            if net is None:
+                net = client.networks.find(label="Shared")
+                if i = 0:
+                    logger(None,None,"Exit node: No network specified, defaulting to Shared",None)
+            nics = [{'net-id': net.id}]
+            instance = client.servers.create(name=name,
+                                             image=image,
+                                             flavor=flavor,
+                                             nics=nics)
+            time.sleep(5)
+    finally:
+        logger(None,"Network: " + str(size) + "exit nodes created",None,None)
+
+def create_relaynode(client,img,flav,net,size):
+    """
+       TODO: implement, add error catching
+    """
+    try:
+        for i in range(0,size):
+            name = "relay_node" + str(i)
+            if img is None:
+                img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+                if i = 0:
+                    logger(None,None,"Relay node: No image name provided, defaulting to Ubuntu 14.04.4",None)
+            if flav is None:
+                flav = client.flavors.find(name="m1.tiny")
+                if i = 0:
+                    logger(None,None,"Relay node: No flavor specified, defaulting to m1.tiny",None)
+            if net is None:
+                net = client.networks.find(label="Shared")
+                if i = 0:
+                    logger(None,None,"Relay node: No network specified, defaulting to Shared",None)
+            nics = [{'net-id': net.id}]
+            instance = client.servers.create(name=name,
+                                             image=image,
+                                             flavor=flavor,
+                                             nics=nics)
+            time.sleep(5)
+    finally:
+        logger(None,"Network: " + str(size) + "relay nodes created",None,None)
+    
+# Launch functions
+
+def web_launch(username,password,img,flav,net,size):
+    client = create_connection(username,password)
+    logger("Client initialized by " + username + " from web UI","Starting new network build of size " + str(size),None,None)
+    # TODO make config dictionary
+    create_dirauth(client,config)
+    create_guardnode(client,config)
+    create_exitnode(client,config)
+    create_relaynode(client,config)
+
 if __name__ == '__main__':
-    client = create_connection()
+    client = create_connection(None,None)
     while(True):
         print("\nOpenstack SDK Backend - Main Menu")
         print("1. Reporting Options")
