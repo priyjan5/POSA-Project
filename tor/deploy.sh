@@ -9,7 +9,7 @@ TOR_DIR=/var/lib/tor
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
 UTIL_SERVER=172.16.106.169
-TORRC_CONFIG_DIR=/home/tor/RIT_Capstone_2016/tor/config
+TORRC_CONFIG_DIR=/tor/config
 
 echo -e "\n========================================================"
 
@@ -18,28 +18,41 @@ echo -e "\n========================================================"
 # Install Build Dependencies #
 ##############################
 
-echo "Updating package manager"
+echo "[!] Updating package manager"
 #apt-get update > /dev/null
 
-echo "Installing pwgen to generate hostnames"
+echo "[!] Installing pwgen to generate hostnames"
 apt-get install -y pwgen > /dev/null
 
-echo "Installing git"
+echo "[!] Installing git"
 apt-get install -y git > /dev/null
 
-echo "Installing tor"
+echo "[!] Installing tor"
 apt-get install -y tor > /dev/null
 
-echo "Installing sshpass to auto login with scp"
+echo "[!] Installing sshpass to auto login with scp"
 apt-get install -y sshpass > /dev/null
 
+
+# Clone github repo
+echo "[!] Cloning GIT Repo"
+git clone https://github.com/98Giraffe/RIT_Capstone_2016.git
+
+# Copying TOR folder from get to /
+cp -r ./RIT_Capstone_2016/tor /
+
+
+
+#################################
+# Generate torrc common configs #
+#################################
 
 # Generate Nickname
 RPW=$(pwgen -0A 5)
 
 # Export TOR_NICKNAME environment variable
 export TOR_NICKNAME=${ROLE}${RPW}
-echo "Setting random Nickname: ${TOR_NICKNAME}"
+echo "[!] Setting random Nickname: ${TOR_NICKNAME}"
 
 # Add nickname to torrc
 echo -e "\nNickname ${TOR_NICKNAME}" >> /etc/tor/torrc
@@ -51,6 +64,7 @@ echo -e "DataDirectory ${TOR_DIR}" >> /etc/tor/torrc
 TOR_IP=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
 	
 # Add IP to torrc
+echo "[!] Setting IP to ${TOR_IP}"
 echo "Address ${TOR_IP}" >> /etc/tor/torrc
 
 # Add Control Port to torrc
@@ -59,7 +73,7 @@ echo -e "ControlPort 0.0.0.0:9051" >> /etc/tor/torrc
 # Add ContactInfo to torrc
 echo -e "ContactInfo kar@bar.gov" >> /etc/tor/torrc
 
-echo made it here
+
 
 ##############################
 # DA Specific Configurations #
@@ -67,12 +81,13 @@ echo made it here
 
 if [ $ROLE == "DA" ]; then
 
-	echo "Setting Role to DA"
+	echo "[!] Setting Role to DA"
 
 	# Append DA template config file to the end of current torrc
 	cat ${TOR_CONFIG_DIR}/torrc.da >> /etc/tor/torrc 
 
 	# Adding OrPort to torrc
+	echo "[!] Opening OrPort ${TOR_ORPORT}"
 	echo -e "OrPort ${TOR_ORPORT}" >> /etc/tor/torrc
 
 	# Adding Dirport to torrc
@@ -117,7 +132,8 @@ if [ $ROLE == "DA" ]; then
 	
 	echo TORRC $TORRC
 	echo $TORRC >> /etc/tor/torrc
-	echo $TORRC | sshpass -p "wordpass" ssh tor@$UTIL_SERVER 172.16.106.169 "cat >> ~/DAs"
+	echo "[!] Uploading DirAuthoirty torrc config to util server"
+	echo $TORRC | sshpass -p "wordpass" ssh tor@$UTIL_SERVER "cat >> ~/DAs"
 fi
 
 
@@ -127,7 +143,7 @@ fi
 
 if [ $ROLE == "RELAY" ]; then
 
-	echo "Setting role to RELAY"
+	echo "[!] Setting role to RELAY"
 	
 	# Set OrPort in torrc
 	echo -e "OrPort ${TOR_ORPORT}" >> /etc/tor/torrc
@@ -146,7 +162,7 @@ fi
 
 if [ $ROLE == "EXIT" ]; then
 	
-	echo "Setting role to Exit"
+	echo "[!] Setting role to Exit"
 
 	# Set OrPort in torrc
 	echo -e "OrPort ${TOR_ORPORT}" >> /etc/tor/torrc
@@ -164,7 +180,7 @@ fi
 
 if [ $ROLE == "CLIENT" ]; then
 
-	echo "Setting role to Client"
+	echo "[!] Setting role to Client"
 	
 	# Set SOCKSPort in torrc
 	echo -e "SOCKSPort 0.0.0.0:9050" >> /etc/tor/torrc
@@ -178,7 +194,7 @@ fi
 
 if [ $ROLE == "HS" ]; then
 
-	echo "Setting role to Hidden Service"
+	echo "[!] Setting role to Hidden Service"
 	
 	# Adding HiddenServiceDir to torrc will be located at /var/lib/tor/hs
 	echo -e "HiddenServiceDir ${TOR_DIR}/hs" >> /etc/tor/torrc
@@ -187,6 +203,12 @@ if [ $ROLE == "HS" ]; then
 	echo -e "HiddenServicePort ${TOR_HS_PORT} ${TOR_HS_ADDR}:${TOR_HS_PORT}" >> /etc/tor/torrc
 	
 fi
+
+# Update DAs in torrc
+/tor/update_torrc_DAs.sh
+
+# Add update_torrc_DAs.sh as a cron job running every minute
+*/1 * * * * /tor/update_torrc_DAs.sh
 
 echo -e "\n========================================================"
 # display Tor version & torrc in log
