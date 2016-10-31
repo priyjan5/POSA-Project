@@ -2,14 +2,15 @@
 
 echo > /etc/tor/torrc
 rm -r /var/lib/tor/keys
+rm -r /tor
 
 # Define Variables
 ROLE="DA"
-TOR_DIR=/var/lib/tor
+TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
 UTIL_SERVER=172.16.106.169
-TORRC_CONFIG_DIR=/tor/config
+TORRC_CONFIG_DIR="/tor/config"
 
 echo -e "\n========================================================"
 
@@ -41,8 +42,7 @@ echo "[!] Cloning GIT Repo"
 git clone https://github.com/98Giraffe/RIT_Capstone_2016.git
 
 # Copying TOR folder from get to /
-cp -r ./RIT_Capstone_2016/tor /
-
+cp -r RIT*/tor /
 
 
 #################################
@@ -86,8 +86,9 @@ if [ $ROLE == "DA" ]; then
 	echo "[!] Setting Role to DA"
 
 	# Append DA template config file to the end of current torrc
-	cat ${TOR_CONFIG_DIR}/torrc.da >> /etc/tor/torrc 
-
+	echo "[!] appending DA config to torrc"
+	cat ${TORRC_CONFIG_DIR}/torrc.da >> /etc/tor/torrc
+	
 	# Adding OrPort to torrc
 	echo "[!] Opening OrPort ${TOR_ORPORT}"
 	echo -e "OrPort ${TOR_ORPORT}" >> /etc/tor/torrc
@@ -117,7 +118,7 @@ if [ $ROLE == "DA" ]; then
 	echo "[!] Generating Router Fingerprint"
 	tor --list-fingerprint --orport 1 \
     	--dirserver "x 127.0.0.1:1 ffffffffffffffffffffffffffffffffffffffff" \
-    	--datadirectory ${TOR_DIR}
+    	--datadirectory ${TOR_DIR} >> /dev/null
 
 	# Generate DirAuthority torrc line
 	echo "[!] Generating DirAuthority Line"
