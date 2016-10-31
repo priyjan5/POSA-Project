@@ -5,14 +5,13 @@ rm -r /var/lib/tor/keys
 rm -r /tor
 
 # Define Variables
-ROLE="RELAY"
+ROLE="DA"
 TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
-UTIL_SERVER=172.19.240.116
+export UTIL_SERVER=172.19.240.116
 TORRC_CONFIG_DIR="/tor/config"
 
-export $UTIL_SERVER
 
 echo -e "\n========================================================"
 
