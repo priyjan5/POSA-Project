@@ -12,7 +12,8 @@ tor_network ={
                 'V3ident': 'V3',
                 'ORPort': 0,
                 'DIRPort': 7000,
-                'ControlPort':5601
+                'ControlPort':5601,
+                'IP':''
             },
 
             {
@@ -33,7 +34,8 @@ tor_network ={
                 'V3ident': 'V3',
                 'ORPort': 0,
                 'DIRPort': 7000,
-                'ControlPort':5601
+                'ControlPort':5601,
+                'ExitPolicy':''
             },
 
             {
@@ -52,6 +54,8 @@ tor_network ={
 
 
 #Take user network paramaters from webapp
+
+
 
 #Generate torrc files for all boxes
 

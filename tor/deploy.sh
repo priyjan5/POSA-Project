@@ -9,6 +9,7 @@ TOR_DIR=/var/lib/tor
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
 UTIL_SERVER=172.16.106.169
+TORRC_CONFIG_DIR=/home/tor/RIT_Capstone_2016/tor/config
 
 echo -e "\n========================================================"
 
@@ -69,7 +70,7 @@ if [ $ROLE == "DA" ]; then
 	echo "Setting Role to DA"
 
 	# Append DA template config file to the end of current torrc
-	cat config/torrc.da >> /etc/tor/torrc 
+	cat ${TOR_CONFIG_DIR}/torrc.da >> /etc/tor/torrc 
 
 	# Adding OrPort to torrc
 	echo -e "OrPort ${TOR_ORPORT}" >> /etc/tor/torrc
