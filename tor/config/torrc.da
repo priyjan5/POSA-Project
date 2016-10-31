@@ -16,9 +16,9 @@ TestingV3AuthInitialVotingInterval 300
 V3AuthVotingInterval 15
 # VoteDelay + DistDelay must be less than VotingInterval
 TestingV3AuthInitialVoteDelay 5
-V3AuthVoteDelay 5
+V3AuthVoteDelay 3 
 TestingV3AuthInitialDistDelay 5
-V3AuthDistDelay 5
+V3AuthDistDelay 3
 # This is autoconfigured by chutney, so you probably don't want to use it
 #TestingV3AuthVotingStartOffset 0
 
