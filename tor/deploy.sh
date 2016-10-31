@@ -8,7 +8,7 @@ ROLE=$1
 TOR_DIR=/var/lib/tor
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
-
+UTIL_SERVER=172.16.106.169
 
 echo -e "\n========================================================"
 
@@ -116,7 +116,7 @@ if [ $ROLE == "DA" ]; then
 	
 	echo TORRC $TORRC
 	echo $TORRC >> /etc/tor/torrc
-	echo $TORRC | sshpass -p "wordpass" ssh tor@172.16.106.169 "cat >> ~/DAs"
+	echo $TORRC | sshpass -p "wordpass" ssh tor@$UTIL_SERVER 172.16.106.169 "cat >> ~/DAs"
 fi
 
 
