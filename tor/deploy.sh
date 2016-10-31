@@ -4,7 +4,7 @@ echo > /etc/tor/torrc
 rm -r /var/lib/tor/keys
 
 # Define Variables
-ROLE=$1
+ROLE="DA"
 TOR_DIR=/var/lib/tor
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
