@@ -1,6 +1,6 @@
 """
    file: launch.py
-   vers: 1.4
+   vers: 1.5
    desc: Openstack Tor Network builder backend
 """
 
@@ -8,6 +8,7 @@ import time
 import getpass
 from novaclient.client import Client
 
+networks = {}
 
 # Logging functions
 
@@ -50,10 +51,26 @@ def get_auth(username,password):
     auth['password'] = password
     auth['auth_url'] = 'https://acopenstack.rit.edu:5000/v2.0'
     auth['project_id'] = 'jrh7130-multi'
-    if auth['insecure'] = True:
+    if auth['insecure'] == True:
         cert_warn = "Connection: SSL certificates being ignored"
         logger(cert_warn,None,cert_warn,None)
     return auth
+
+# Network config functions
+
+def net_builder(node_type,name,netname):
+    """
+       TODO: delete
+    
+       Internal helper function to maintain network configuration
+    """
+    if netname is not None:
+        if netname not in networks:
+            networks[netname] = {"nodes":[]}
+    if netname is None:
+        networks["Shared"] = {"nodes":[]}
+        netname = "Shared"
+    networks[netname][node_type].append(name)
 
 def create_connection(username,password):
     """
@@ -277,7 +294,7 @@ def rename_instance(client):
 
 # Web functions
 
-def create_dirauth(client,img,flav,net,size):
+def create_dirauth(client,img,flav,netname,size):
     """
        TODO: implement, add error catching
     """
@@ -286,54 +303,27 @@ def create_dirauth(client,img,flav,net,size):
             name = "directory_authority" + str(i)
             if img is None:
                 img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i = 0:
+                if i == 0:
                     logger(None,None,"Directory Authority: No image name provided, defaulting to Ubuntu 14.04.4",None)
             if flav is None:
                 flav = client.flavors.find(name="m1.tiny")
-                if i = 0:
+                if i == 0:
                     logger(None,None,"Directory Authority: No flavor specified, defaulting to m1.tiny",None)                
-            if net is None:
-                net = client.networks.find(label="Shared")
-                if i = 0:
+            if netname is None:
+                netname = client.networks.find(label="Shared")
+                if i == 0:
                     logger(None,None,"Directory Authority: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': net.id}]
+            nics = [{'net-id': netname.id}]
             instance = client.servers.create(name=name,
                                              image=image,
                                              flavor=flavor,
                                              nics=nics)
+            net_builder("directory",name,netname)
             time.sleep(5)
     finally:
         logger(None,"Network: " + str(size) + "directory authorities created",None,None)
 
-def create_guardnode(client,img,flav,net,size):
-    """
-       TODO: implement, add error catching
-    """
-    try:
-        for i in range(0,size):
-            name = "guard_node" + str(i)
-            if img is None:
-                img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i = 0:
-                    logger(None,None,"Guard node: No image name provided, defaulting to Ubuntu 14.04.4",None)
-            if flav is None:
-                flav = client.flavors.find(name="m1.tiny")
-                if i = 0:
-                    logger(None,None,"Guard node: No flavor specified, defaulting to m1.tiny",None)                
-            if net is None:
-                net = client.networks.find(label="Shared")
-                if i = 0:
-                    logger(None,None,"Guard node: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': net.id}]
-            instance = client.servers.create(name=name,
-                                             image=image,
-                                             flavor=flavor,
-                                             nics=nics)
-            time.sleep(5)
-    finally:
-        logger(None,"Network: " + str(size) + "guard nodes created",None,None)
-
-def create_exitnode(client,img,flav,net,size):
+def create_exitnode(client,img,flav,netname,size):
     """
        TODO: implement, add error catching
     """
@@ -342,26 +332,27 @@ def create_exitnode(client,img,flav,net,size):
             name = "exit_node" + str(i)
             if img is None:
                 img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i = 0:
+                if i == 0:
                     logger(None,None,"Exit node: No image name provided, defaulting to Ubuntu 14.04.4",None)
             if flav is None:
                 flav = client.flavors.find(name="m1.tiny")
-                if i = 0:
+                if i == 0:
                     logger(None,None,"Exit node: No flavor specified, defaulting to m1.tiny",None)                
-            if net is None:
-                net = client.networks.find(label="Shared")
-                if i = 0:
+            if netname is None:
+                netname = client.networks.find(label="Shared")
+                if i == 0:
                     logger(None,None,"Exit node: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': net.id}]
+            nics = [{'net-id': netname.id}]
             instance = client.servers.create(name=name,
                                              image=image,
                                              flavor=flavor,
                                              nics=nics)
+            net_builder("exit",name,netname)
             time.sleep(5)
     finally:
         logger(None,"Network: " + str(size) + "exit nodes created",None,None)
 
-def create_relaynode(client,img,flav,net,size):
+def create_relaynode(client,img,flav,netname,size):
     """
        TODO: implement, add error catching
     """
@@ -370,33 +361,70 @@ def create_relaynode(client,img,flav,net,size):
             name = "relay_node" + str(i)
             if img is None:
                 img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i = 0:
+                if i == 0:
                     logger(None,None,"Relay node: No image name provided, defaulting to Ubuntu 14.04.4",None)
             if flav is None:
                 flav = client.flavors.find(name="m1.tiny")
-                if i = 0:
+                if i == 0:
                     logger(None,None,"Relay node: No flavor specified, defaulting to m1.tiny",None)
-            if net is None:
-                net = client.networks.find(label="Shared")
-                if i = 0:
+            if netname is None:
+                netname = client.networks.find(label="Shared")
+                if i == 0:
                     logger(None,None,"Relay node: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': net.id}]
+            nics = [{'net-id': netname.id}]
             instance = client.servers.create(name=name,
                                              image=image,
                                              flavor=flavor,
                                              nics=nics)
+            net_builder("relay",name,netname)
             time.sleep(5)
     finally:
         logger(None,"Network: " + str(size) + "relay nodes created",None,None)
+
+def create_clientnode(client,img,flav,netname,size):
+    """
+       TODO: implement, add error catching
+    """
+    try:
+        for i in range(0,size):
+            name = "client_node" + str(i)
+            if img is None:
+                img = client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+                if i == 0:
+                    logger(None,None,"Client node: No image name provided, defaulting to Ubuntu 14.04.4",None)
+            if flav is None:
+                flav = client.flavors.find(name="m1.tiny")
+                if i == 0:
+                    logger(None,None,"Client node: No flavor specified, defaulting to m1.tiny",None)
+            if netname is None:
+                netname = client.networks.find(label="Shared")
+                if i == 0:
+                    logger(None,None,"Client node: No network specified, defaulting to Shared",None)
+            nics = [{'net-id': netname.id}]
+            instance = client.servers.create(name=name,
+                                             image=image,
+                                             flavor=flavor,
+                                             nics=nics)
+            net_builder("client",name,netname)
+            time.sleep(5)
+    finally:
+        logger(None,"Network: " + str(size) + "client nodes created",None,None)
+
+# Teardown functions
+
+def destroy_network(client,netname):
+    for e in networks[netname][nodes]:
+        logger(None,"Network: Deleting node " + e,None,None)
+        client.servers.delete(e)
+        
     
 # Launch functions
 
-def web_launch(username,password,img,flav,net,size):
+def web_launch(username,password,netname,size):
     client = create_connection(username,password)
     logger("Client initialized by " + username + " from web UI","Starting new network build of size " + str(size),None,None)
     # TODO make config dictionary
     create_dirauth(client,config)
-    create_guardnode(client,config)
     create_exitnode(client,config)
     create_relaynode(client,config)
 
