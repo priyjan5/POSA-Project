@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Delete existing tor on box
 echo > /etc/tor/torrc
 rm -r /var/lib/tor/keys
 rm -r /tor
@@ -9,7 +10,7 @@ ROLE="DA"
 TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
-export UTIL_SERVER=172.19.240.116
+export UTIL_SERVER=172.16.106.158
 TORRC_CONFIG_DIR="/tor/config"
 
 
@@ -32,9 +33,11 @@ apt-get install -y git > /dev/null
 echo "[!] Installing tor"
 apt-get install -y tor > /dev/null
 
-echo "[!] Installing sshpass to auto login with scp"
+echo "[!] Installing sshpass to auto login with scp and ssh"
 apt-get install -y sshpass > /dev/null
 
+
+# Stop tor service
 sudo service tor stop
 chown root /var/lib/tor
 
@@ -64,6 +67,8 @@ echo -e "\nNickname ${TOR_NICKNAME}" >> /etc/tor/torrc
 echo -e "DataDirectory ${TOR_DIR}" >> /etc/tor/torrc
 
 # Get IP
+# get ip using ip command consider editing to use ifconfig if ip addr is not aviable
+# Or other tool (kernel files?)
 TOR_IP=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
 	
 # Add IP to torrc
@@ -98,6 +103,7 @@ if [ $ROLE == "DA" ]; then
 	echo -e "Dirport ${TOR_DIRPORT}" >> /etc/tor/torrc
 
 	# Adding ExitPolicy to torrc
+	# check what exit policy shoudl be on dir authority
 	echo -e "ExitPolicy accept *:*" >> /etc/tor/torrc
 
 	# Generate Tor path for keys to be stored
@@ -161,7 +167,7 @@ if [ $ROLE == "RELAY" ]; then
 fi
 
 ################################
-# Exit Specific Configurations #
+# Exit Specific Configurations               #
 ################################
 
 if [ $ROLE == "EXIT" ]; then
