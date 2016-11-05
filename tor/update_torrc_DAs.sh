@@ -1,5 +1,5 @@
 UTIL_SERVER=172.16.106.158
-sshpass -p "wordpass" scp tor@${UTIL_SERVER}:~/DAs .
+sshpass -p "wordpass" scp -oStrictHostKeyChecking=no tor@${UTIL_SERVER}:~/DAs .
 
 while read p; do
   
