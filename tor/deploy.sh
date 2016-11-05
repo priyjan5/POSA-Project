@@ -6,7 +6,7 @@ rm -r /var/lib/tor/keys
 rm -r /tor
 
 # Define Variables
-ROLE="DA"
+ROLE=$1
 TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
@@ -80,6 +80,9 @@ echo -e "ControlPort 0.0.0.0:9051" >> /etc/tor/torrc
 
 # Add ContactInfo to torrc
 echo -e "ContactInfo kar@bar.gov" >> /etc/tor/torrc
+
+# Add TestingTorNetwork to torrc
+echo -e "TestingTorNetwork 1" >> /etc/tor/torrc
 
 
 
