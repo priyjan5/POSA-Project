@@ -109,6 +109,9 @@ if [ $ROLE == "DA" ]; then
 	# check what exit policy shoudl be on dir authority
 	echo -e "ExitPolicy accept *:*" >> /etc/tor/torrc
 
+	# Adding V3AuthVotingInterval for lower consensus time from 5 minuets to two
+	echo -e "V3AuthVotingInterval 2 minutes" >> /etc/tor/torrc
+	
 	# Generate Tor path for keys to be stored
 	KEYPATH=${TOR_DIR}/keys
 	echo "[!] Making Key Path ${KEYPATH}"
