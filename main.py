@@ -52,10 +52,14 @@ tor_network ={
 }
 
 
+valid_after = r"""(valid-after ([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}))\n(fresh-until ([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}))\n(valid-until ([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}))\n"""
 
 #Take user network paramaters from webapp
 
 
+dir-source DAzeiwa 71332F494F6AB32F55DB530B652C92C8A71AE0BB 172.16.106.155 172.16.106.155 9898 7000
+
+/^[a-z\-]/
 
 #Generate torrc files for all boxes
 
