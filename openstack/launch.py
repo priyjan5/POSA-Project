@@ -18,12 +18,16 @@ def logger(access,session,debug,error):
     """
     if access is not None:
         # Log to access log
+        pass
     if session is not None:
         # Log to session log
+        pass
     if debug is not None:
         # Log to debug log
+        pass
     if error is not None:
         # Log to error log
+        pass
 
 # Connection functions
 
