@@ -43,16 +43,16 @@ BEGIN {
 
 END {
 
-it = 0
-print "DAs\n"
-for (i=0;i<da_count;i++){
-    printf("[%d] %s\n\tIP: %s\n\tContact:%s\n",i+1, DAs[i, "nickname"], DAs[i, "ip1"], DAs[i, "contact"])
-}
+    it = 0
+    print "DAs\n"
+    for (i=0;i<da_count;i++){
+        printf("[%d] %s\n\tIP: %s\n\tContact:%s\n",i+1, DAs[i, "nickname"], DAs[i, "ip1"], DAs[i, "contact"])
+    }
 
-#print "\nRELAYS\n"
-#for (i=0;i<relay_count;i++){
-#    printf("[%d] %s\n\tIP: %s\n\tFlags:%s\n\tExit Policy:%s\n",i+1, RELAYs[i, "nickname"], RELAYs[i, "ip"], RELAYs[i, "flags"], RELAYs[i, "exit_policy"])
-#}
+    print "\nRELAYS\n"
+    for (i=0;i<relay_count;i++){
+        printf("[%d] %s\n\tIP: %s\n\tFlags:%s\n\tExit Policy:%s\n",i+1, RELAYs[i, "nickname"], RELAYs[i, "ip"], RELAYs[i, "flags"], RELAYs[i, "exit_policy"])
+    }
 
 
 
