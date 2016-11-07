@@ -1,5 +1,4 @@
 #!/usr/bin/awk
-FILENAME=$1
 
 BEGIN {
     da_count = 0
