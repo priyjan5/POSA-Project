@@ -7,10 +7,10 @@ rm -r /tor
 
 # Define Variables
 ROLE=$1
+UTIL_SERVER=$2
 TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
-export UTIL_SERVER=172.16.106.158
 TORRC_CONFIG_DIR="/tor/config"
 
 
