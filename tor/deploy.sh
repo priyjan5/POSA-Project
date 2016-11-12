@@ -149,7 +149,7 @@ if [ $ROLE == "DA" ]; then
 	echo [!] TORRC $TORRC
 	echo $TORRC >> /etc/tor/torrc
 	echo "[!] Uploading DirAuthoirty torrc config to util server"
-	echo $TORRC | sshpass -p "wordpass" ssh tor@$UTIL_SERVER "cat >> ~/DAs"
+	echo $TORRC | sshpass -p "wordpass" ssh -oStrictHostKeyChecking=no tor@$UTIL_SERVER "cat >> ~/DAs"
 fi
 
 
