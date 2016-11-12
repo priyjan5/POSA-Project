@@ -221,7 +221,7 @@ if [ $ROLE == "HS" ]; then
 fi
 
 # Update DAs in torrc
-/tor/update_torrc_DAs.sh
+/tor/update_torrc_DAs.sh ${UTIL_SERVER}
 
 # Add update_torrc_DAs.sh as a cron job running every minute
 #*/1 * * * * /tor/update_torrc_DAs.sh
