@@ -21,7 +21,7 @@ cp RIT_Capstone_2016/tor/deploy.sh /var/www/html/
 cp RIT_Capstone_2016/tor/update_torrc_DAs.sh /var/www/html/
 
 useradd tor
-echo wordpass | passwd tor
+echo tor:wordpass | chpasswd tor
 usermod -aG sudo tor
 
 cd /home/tor
