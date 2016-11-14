@@ -28,3 +28,4 @@ cd /home/tor
 touch DAs
 chown tor DAs
 chgrp tor DAs
+chmod a+rw DAs
