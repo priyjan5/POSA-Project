@@ -20,7 +20,7 @@ echo "[!] Copying deploy.sh to apache root"
 cp RIT_Capstone_2016/tor/deploy.sh /var/www/html/
 cp RIT_Capstone_2016/tor/update_torrc_DAs.sh /var/www/html/
 
-useradd tor
+useradd tor -d /home/tor
 echo tor:wordpass | chpasswd tor
 usermod -aG sudo tor
 
