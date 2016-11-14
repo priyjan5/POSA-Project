@@ -220,6 +220,8 @@ if [ $ROLE == "HS" ]; then
 	
 fi
 
+# Adding update_torrc to cron job
+* * * * * /tor/update_torrc_DAs.sh
 # Update DAs in torrc
 /tor/update_torrc_DAs.sh ${UTIL_SERVER}
 
