@@ -25,7 +25,6 @@ echo tor:wordpass | chpasswd tor
 usermod -aG sudo tor
 
 cd /home/tor
-chown root root /var/lib/tor
 touch DAs
 chown tor DAs
 chgrp tor DAs
