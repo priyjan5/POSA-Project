@@ -39,6 +39,7 @@ apt-get install -y sshpass > /dev/null
 
 # Stop tor service
 sudo service tor stop
+echo "[!] chainging /var/lib/tor permissions to root"
 chown root /var/lib/tor
 
 # Clone github repo
