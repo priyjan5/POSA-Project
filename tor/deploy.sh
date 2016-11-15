@@ -2,7 +2,9 @@
 
 
 
-if [ $1 == "-h" ]; then
+
+
+if [ ($1 == "-h") || ($# -ne 2) ]; then
 	echo "Tor Private Network Deploy Script"
 	echo "Useage: ./deploy.sh [DA | RELAY | EXIT | CLIENT | HS] [UTIL IP]"
 	echo "---------------------------------------------------------------"
@@ -36,16 +38,17 @@ echo -e "\n========================================================"
 echo "[!] Updating package manager"
 apt-get update > /dev/null
 
-echo "[!] Installing pwgen to generate hostnames"
-apt-get install -y pwgen > /dev/null
-
-echo "[!] Installing git"
-apt-get install -y git > /dev/null
-
 echo "[!] Installing tor"
 apt-get install -y tor > /dev/null
 
-echo "[!] Installing sshpass to auto login with scp and ssh"
+echo "[!] Installing pwgen to generate hostnames"
+apt-get install -y pwgen > /dev/null
+
+# See below for comment on git
+#echo "[!] Installing git"
+#apt-get install -y git > /dev/null
+
+echo "[!] Installing sshpass to auto login with sand ssh"
 apt-get install -y sshpass > /dev/null
 
 
@@ -54,12 +57,18 @@ sudo service tor stop
 echo "[!] chainging /var/lib/tor permissions to root"
 chown root /var/lib/tor
 
+# Changed this so we no longer need to clone the git repo and install git, the repo is pulled once
+# when the util box is deployed and the update_torrc_DAs.sh script is moved into the utils apache web root allowing us
+# to wget it instead of pull down the entire git repo
+
+wget ${UTIL_SERVER}/update_torrc_DAs.sh -P ${TOR_DIR}/
 # Clone github repo
-echo "[!] Cloning GIT Repo"
-git clone https://github.com/98Giraffe/RIT_Capstone_2016.git
+#echo "[!] Cloning GIT Repo"
+#git clone https://github.com/98Giraffe/RIT_Capstone_2016.git
+
 
 # Copying TOR folder from get to /
-cp -r RIT*/tor /
+#cp -r RIT*/tor /
 
 
 #################################
@@ -234,9 +243,9 @@ if [ $ROLE == "HS" ]; then
 fi
 
 # Adding update_torrc to cron job
-* * * * * /tor/update_torrc_DAs.sh
+*/1 * * * * ${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}
 # Update DAs in torrc
-/tor/update_torrc_DAs.sh ${UTIL_SERVER}
+${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}
 
 # Add update_torrc_DAs.sh as a cron job running every minute
 #*/1 * * * * /tor/update_torrc_DAs.sh
@@ -248,5 +257,5 @@ cat /etc/tor/torrc
 echo -e "========================================================\n"
 
 
-tor
+tor --RunAsDaemon 1
 
