@@ -63,6 +63,7 @@ chown root /var/lib/tor
 
 wget ${UTIL_SERVER}/torrc.da -P ${TOR_DIR}/
 wget ${UTIL_SERVER}/update_torrc_DAs.sh -P ${TOR_DIR}/
+chmod a+x ${TOR_DIR}/update_torrc_DAs.sh
 # Clone github repo
 #echo "[!] Cloning GIT Repo"
 #git clone https://github.com/98Giraffe/RIT_Capstone_2016.git
