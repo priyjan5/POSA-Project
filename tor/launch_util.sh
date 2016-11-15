@@ -27,7 +27,7 @@ useradd -m -d /home/tor tor
 echo tor:wordpass | chpasswd tor
 usermod -aG sudo tor
 
-echo "[!] Creating DAs file in /home/tor and correcting file permissions
+echo "[!] Creating DAs file in /home/tor and correcting file permissions"
 cd /home/tor
 touch DAs
 chown tor DAs
