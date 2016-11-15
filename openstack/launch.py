@@ -9,12 +9,11 @@ import getpass
 import logging
 from novaclient.client import Client
 
-networks = {}
 debug_on = False
 
 # Logging functions
 
-def logger(alert,session,bug,err):
+def logger(session,alert,bug,err):
     timestamp = time.strftime("%m%d%Y")
     logtime = time.strftime(" %H:%M.%S ")
     fn = "tor_net_" + timestamp + ".log"
@@ -61,10 +60,11 @@ def get_auth(username,password):
     auth['project_id'] = 'jrh7130-multi'
     if auth['insecure'] == True:
         cert_warn = "Connection: SSL certificates being ignored"
-        logger(cert_warn,None,cert_warn,None)
+        logger(None,cert_warn,cert_warn,None)
     return auth
 
 def toggle_debug():
+    global debug_on
     if not debug_on:
         debug_on = True
         print("Debugging on, see log file")
@@ -73,20 +73,6 @@ def toggle_debug():
         print("Debugging off")
 
 # Network config functions
-
-def net_builder(node_type,name,netname):
-    """
-       TODO: delete
-    
-       Internal helper function to maintain network configuration
-    """
-    if netname is not None:
-        if netname not in networks:
-            networks[netname] = {"nodes":[]}
-    if netname is None:
-        networks["Shared"] = {"nodes":[]}
-        netname = "Shared"
-    networks[netname][node_type].append(name)
 
 def create_novaclient(username,password):
     """
@@ -313,142 +299,110 @@ def rename_instance(nova_client):
 
 # Web functions
 
-def create_dirauth(nova_client,img,flav,netname,modifier,size):
-    """
-       TODO: implement, add error catching
-    """
-    try:
-        for i in range(0,size):
-            name = "directory_authority" + str(i)
-            if img is None:
-                img = nova_client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i == 0:
-                    logger(None,None,"Directory Authority: No image name provided, defaulting to Ubuntu 14.04.4",None)
-            if flav is None:
-                flav = nova_client.flavors.find(name="m1.tiny")
-                if i == 0:
-                    logger(None,None,"Directory Authority: No flavor specified, defaulting to m1.tiny",None)                
-            if netname is None:
-                netname = nova_client.networks.find(label="Shared")
-                if i == 0:
-                    logger(None,None,"Directory Authority: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': netname.id}]
-            instance = nova_client.servers.create(name=name,
-                                             image=image,
-                                             flavor=flavor,
-                                             nics=nics,
-                                             userdata=modifier)
-            net_builder("directory",name,netname)
-            time.sleep(5)
-    finally:
-        logger(None,"Network: " + str(size) + "directory authorities created",None,None)
+def create_dirauth(nova_client,config):
+    config['name'] = "dir_auth"
+    da_list = create_node(nova_client,config)
+    return da_list
 
-def create_exitnode(nova_client,img,flav,netname,modifier,size):
-    """
-       TODO: implement, add error catching
-    """
-    try:
-        for i in range(0,size):
-            name = "exit_node" + str(i)
-            if img is None:
-                img = nova_client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i == 0:
-                    logger(None,None,"Exit node: No image name provided, defaulting to Ubuntu 14.04.4",None)
-            if flav is None:
-                flav = nova_client.flavors.find(name="m1.tiny")
-                if i == 0:
-                    logger(None,None,"Exit node: No flavor specified, defaulting to m1.tiny",None)                
-            if netname is None:
-                netname = nova_client.networks.find(label="Shared")
-                if i == 0:
-                    logger(None,None,"Exit node: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': netname.id}]
-            instance = nova_client.servers.create(name=name,
-                                             image=image,
-                                             flavor=flavor,
-                                             nics=nics,
-                                             userdata=modifier)
-            net_builder("exit",name,netname)
-            time.sleep(5)
-    finally:
-        logger(None,"Network: " + str(size) + "exit nodes created",None,None)
+def create_exitnode(nova_client,config):
+    config['name'] = "exit_node"
+    exit_list = create_node(nova_client,config)
+    return exit_list
 
-def create_relaynode(nova_client,img,flav,netname,modifier,size):
-    """
-       TODO: implement, add error catching
-    """
-    try:
-        for i in range(0,size):
-            name = "relay_node" + str(i)
-            if img is None:
-                img = nova_client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i == 0:
-                    logger(None,None,"Relay node: No image name provided, defaulting to Ubuntu 14.04.4",None)
-            if flav is None:
-                flav = nova_client.flavors.find(name="m1.tiny")
-                if i == 0:
-                    logger(None,None,"Relay node: No flavor specified, defaulting to m1.tiny",None)
-            if netname is None:
-                netname = nova_client.networks.find(label="Shared")
-                if i == 0:
-                    logger(None,None,"Relay node: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': netname.id}]
-            instance = nova_client.servers.create(name=name,
-                                             image=image,
-                                             flavor=flavor,
-                                             nics=nics,
-                                             userdata=modifier)
-            net_builder("relay",name,netname)
-            time.sleep(5)
-    finally:
-        logger(None,"Network: " + str(size) + "relay nodes created",None,None)
+def create_relaynode(nova_client,config):
+    config['name'] = "relay_node"
+    relay_list = create_node(nova_client,config)
+    return relay_list
 
-def create_clientnode(nova_client,img,flav,netname,modifier,size):
+def create_clientnode(nova_client,config):
+    config['name'] = "client_node"
+    client_list = create_node(nova_client,config)
+    return client_list
+
+def create_node(nova_client,config):
     """
-       TODO: implement, add error catching
+        TODO: add error checking
+
+        Helper function to create instances.
+
+        Args:
+            nova_client - instance of the client connection to Openstack
+            config - dictionary containing parameters:
+                        * image - name of image to use
+                        * flavor - name of flavor to use
+                        * netname - name of network to use
+                        * modifier - name of launch script to use
+                        * size - number of elements to create
+
+        Returns:
+            client_list - a list of client objects created
     """
-    try:
-        for i in range(0,size):
-            name = "client_node" + str(i)
-            if img is None:
-                img = nova_client.images.find(name="Ubuntu 14.04.4 Fresh Install")
-                if i == 0:
-                    logger(None,None,"Client node: No image name provided, defaulting to Ubuntu 14.04.4",None)
-            if flav is None:
-                flav = nova_client.flavors.find(name="m1.tiny")
-                if i == 0:
-                    logger(None,None,"Client node: No flavor specified, defaulting to m1.tiny",None)
-            if netname is None:
-                netname = nova_client.networks.find(label="Shared")
-                if i == 0:
-                    logger(None,None,"Client node: No network specified, defaulting to Shared",None)
-            nics = [{'net-id': netname.id}]
-            instance = nova_client.servers.create(name=name,
-                                                  image=image,
-                                                  flavor=flavor,
-                                                  nics=nics,
-                                                  userdata=modifier)
-            net_builder("client",name,netname)
-            time.sleep(5)
-    finally:
-        logger(None,"Network: " + str(size) + "client nodes created",None,None)
+    node_list = []
+    image = config['image']
+    flavor = config['flavor']
+    netname = config['netname']
+    modifier = config['script']
+    size = config['size']
+    node_name = config['name']
+
+    if image is None:
+        image = nova_client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+    if flavor is None:
+        flavor = nova_client.flavors.find(name="m1.small")
+    if netname is None:
+        netname = nova_client.networks.find(label="Shared")
+    nics = [{'net-id': netname.id}]
+
+    for i in range(0,size):
+        name = node_name + str(i)
+        instance = nova_client.servers.create(name=name,
+                                              image=image,
+                                              flavor=flavor,
+                                              nics=nics,
+                                              userdata=modifier)
+        node_list.append(instance)
+        time.sleep(5)
+        logger(None,"Network: " + name + " node created",None,None)
+
+    return node_list
 
 # Teardown functions
 
-def destroy_network(nova_client,netname):
-    for e in networks[netname][nodes]:
-        logger("Deleting " + netname,"Network: Deleting node " + e,None,None)
-        nova_client.servers.delete(e)
+def destroy_network(nova_client,img_name):
+    """
+	   TODO: Determine paramters to base deletion on
+	"""
+    logger("Deleting node: " + img_name,"Network: Deleting node " + img_name,None,None)
+    nova_client.servers.delete(img_name)
         
     
 # Launch functions
 
 def web_launch(username,password,netname,modifier,size):
     nova_client = create_novaclient(username,password)
-    logger("Nova client initialized by " + username + " from web UI","Starting new network build of size " + str(size),None,None)
+    logger("Nova client initialized by " + username + " from web UI",None,None,None)
+    logger("Starting new network build of size " + str(size),None,None,None)
     create_dirauth(nova_client,config)
     create_exitnode(nova_client,config)
     create_relaynode(nova_client,config)
+    create_clientnode(nova_client,config)
+	
+def test_launch(username,password,img,flav,netname,modifier,size):
+    nova_client = create_novaclient(username,password)
+    config = {'image': img,
+			  'flavor': flav,
+			  'netname': netname,
+			  'script': modifier,
+			  'size': size}
+    client_list = create_clientnode(nova_client,config)
+    relay_list = create_relaynode(nova_client,config)
+    exit_list = create_exitnode(nova_client,config)
+    da_list = create_dirauth(nova_client,config)
+    nodes = {'client': client_list,
+             'relay': relay_list,
+             'exit': exit_list,
+             'da': da_list}
+    return nodes
 
 if __name__ == '__main__':
     nova_client = create_novaclient(None,None)
