@@ -13,6 +13,7 @@
 ## Imports
 - import time
 - import getpass
+- import logging
 - from novaclient.client import Client
 
 ## Web UI Functions

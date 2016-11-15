@@ -7,10 +7,10 @@ rm -r /tor
 
 # Define Variables
 ROLE=$1
+UTIL_SERVER=$2
 TOR_DIR="/var/lib/tor"
 TOR_ORPORT=7000
 TOR_DIRPORT=9898
-export UTIL_SERVER=172.16.106.158
 TORRC_CONFIG_DIR="/tor/config"
 
 
@@ -39,6 +39,7 @@ apt-get install -y sshpass > /dev/null
 
 # Stop tor service
 sudo service tor stop
+echo "[!] chainging /var/lib/tor permissions to root"
 chown root /var/lib/tor
 
 # Clone github repo
@@ -149,7 +150,7 @@ if [ $ROLE == "DA" ]; then
 	echo [!] TORRC $TORRC
 	echo $TORRC >> /etc/tor/torrc
 	echo "[!] Uploading DirAuthoirty torrc config to util server"
-	echo $TORRC | sshpass -p "wordpass" ssh tor@$UTIL_SERVER "cat >> ~/DAs"
+	echo $TORRC | sshpass -p "wordpass" ssh -oStrictHostKeyChecking=no tor@$UTIL_SERVER "cat >> ~/DAs"
 fi
 
 
@@ -220,8 +221,10 @@ if [ $ROLE == "HS" ]; then
 	
 fi
 
+# Adding update_torrc to cron job
+* * * * * /tor/update_torrc_DAs.sh
 # Update DAs in torrc
-/tor/update_torrc_DAs.sh
+/tor/update_torrc_DAs.sh ${UTIL_SERVER}
 
 # Add update_torrc_DAs.sh as a cron job running every minute
 #*/1 * * * * /tor/update_torrc_DAs.sh
