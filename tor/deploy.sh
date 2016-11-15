@@ -55,7 +55,7 @@ apt-get install -y sshpass > /dev/null
 # Stop tor service
 sudo service tor stop
 echo "[!] chainging /var/lib/tor permissions to root"
-chown root /var/lib/tor
+#chown root /var/lib/tor
 
 # Changed this so we no longer need to clone the git repo and install git, the repo is pulled once
 # when the util box is deployed and the update_torrc_DAs.sh script is moved into the utils apache web root allowing us
