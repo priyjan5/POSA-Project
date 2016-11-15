@@ -242,8 +242,11 @@ if [ $ROLE == "HS" ]; then
 	
 fi
 
+echo "[!] Creating cron job to update DA entries regurarly"
 # Adding update_torrc to cron job
-*/1 * * * * ${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}
+(crontab -l 2>/dev/null; echo "*/1 * * * * ${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}") | crontab -
+
+echo "[!] Updating DAs list once before cron kicks in"
 # Update DAs in torrc
 ${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}
 
