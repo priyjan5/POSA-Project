@@ -132,7 +132,7 @@ if [ $ROLE == "DA" ]; then
 	echo -e "ExitPolicy accept *:*" >> /etc/tor/torrc
 
 	# Adding V3AuthVotingInterval for lower consensus time from 5 minuets to two
-	echo -e "V3AuthVotingInterval 2 minutes" >> /etc/tor/torrc
+	echo -e "V3AuthVotingInterval 3 minutes" >> /etc/tor/torrc
 	
 	# Generate Tor path for keys to be stored
 	KEYPATH=${TOR_DIR}/keys
