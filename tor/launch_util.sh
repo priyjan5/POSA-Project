@@ -22,6 +22,7 @@ cp RIT_Capstone_2016/tor/deploy.sh /var/www/html/
 echo "[!] Copying update_torrc_DAs.sh to apache root"
 cp RIT_Capstone_2016/tor/update_torrc_DAs.sh /var/www/html/
 
+
 echo "[!] Adding User tor and setting password to wordpass"
 useradd -m -d /home/tor tor
 echo tor:wordpass | chpasswd tor

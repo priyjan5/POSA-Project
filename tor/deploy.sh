@@ -61,6 +61,7 @@ chown root /var/lib/tor
 # when the util box is deployed and the update_torrc_DAs.sh script is moved into the utils apache web root allowing us
 # to wget it instead of pull down the entire git repo
 
+wget ${UTIL_SERVER}/torrc.da -P ${TOR_DIR}/
 wget ${UTIL_SERVER}/update_torrc_DAs.sh -P ${TOR_DIR}/
 # Clone github repo
 #echo "[!] Cloning GIT Repo"
@@ -115,10 +116,14 @@ echo -e "TestingTorNetwork 1" >> /etc/tor/torrc
 if [ $ROLE == "DA" ]; then
 
 	echo "[!] Setting Role to DA"
+	
 
+	echo "AssumeReachable 1" >> /etc/tor/torrc
+	echo "AuthoritativeDirectory 1" >> /etc/tor/torrc
+	echo "V3AuthoritativeDirectory 1" >> /etc/tor/torrc
 	# Append DA template config file to the end of current torrc
-	echo "[!] appending DA config to torrc"
-	cat ${TORRC_CONFIG_DIR}/torrc.da >> /etc/tor/torrc
+	#echo "[!] appending DA config to torrc"
+	#cat ${TOR_DIR}/torrc.da >> /etc/tor/torrc
 	
 	# Adding OrPort to torrc
 	echo "[!] Opening OrPort ${TOR_ORPORT}"
