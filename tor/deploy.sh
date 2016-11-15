@@ -1,5 +1,17 @@
 #!/bin/bash
 
+
+
+if [ $1 == "-h" ]; then
+	echo "Tor Private Network Deploy Script"
+	echo "Useage: ./deploy.sh [DA | RELAY | EXIT | CLIENT | HS] [UTIL IP]"
+	echo "---------------------------------------------------------------"
+	echo "Example: ./deploy.sh DA 172.19.43.32 (For a DA)"
+	echo "Example: ./deploy.sh RELAY 172.19.43.32 (For a Relay)"
+	echo "\n"
+fi
+
+
 # Delete existing tor on box
 echo > /etc/tor/torrc
 rm -r /var/lib/tor/keys
