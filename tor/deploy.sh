@@ -1,6 +1,14 @@
 #!/bin/bash
 
-
+# Welcome! T
+#
+#
+#
+#
+#
+#
+#
+#
 
 
 
@@ -53,8 +61,8 @@ apt-get install -y sshpass > /dev/null
 
 
 # Stop tor service
-sudo service tor stop
-echo "[!] chainging /var/lib/tor permissions to root"
+#sudo service tor stop
+#echo "[!] chainging /var/lib/tor permissions to root"
 #chown root /var/lib/tor
 
 # Changed this so we no longer need to clone the git repo and install git, the repo is pulled once
@@ -266,5 +274,5 @@ cat /etc/tor/torrc
 echo -e "========================================================\n"
 
 
-tor --RunAsDaemon 1
-
+#tor --RunAsDaemon 1
+sudo service tor restart
