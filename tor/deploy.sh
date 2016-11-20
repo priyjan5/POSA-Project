@@ -116,6 +116,10 @@ echo -e "ContactInfo kar@bar.gov" >> /etc/tor/torrc
 # Add TestingTorNetwork to torrc
 echo -e "TestingTorNetwork 1" >> /etc/tor/torrc
 
+echo -e "Log notice file /var/lib/tor/notice.log" >> /etc/tor/torrc
+echo -e "Log info file /var/lib/tor/info.log" >> /etc/tor/torrc
+echo -e "ProtocolWarnings 1" >> /etc/tor/torrc
+echo -e "SafeLogging 0" >> /etc/tor/torrc   				# SafeLogging shows full ip address and info in logs
 
 
 ##############################
