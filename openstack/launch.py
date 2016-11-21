@@ -1,6 +1,6 @@
 """
    file: launch.py
-   vers: 1.6
+   vers: 1.8
    desc: Openstack Tor Network builder backend
 """
 
@@ -13,7 +13,7 @@ debug_on = False
 
 # Logging functions
 
-def logger(session,alert,bug,err):
+def logger(session, alert, bug, err):
     timestamp = time.strftime("%m%d%Y")
     logtime = time.strftime(" %H:%M.%S ")
     fn = "tor_net_" + timestamp + ".log"
@@ -33,7 +33,7 @@ def logger(session,alert,bug,err):
 
 # Connection functions
 
-def get_auth(username,password):
+def get_auth(username, password):
     """
        TODO: remove hardcoded variables
 
@@ -60,7 +60,7 @@ def get_auth(username,password):
     auth['project_id'] = 'jrh7130-multi'
     if auth['insecure'] == True:
         cert_warn = "Connection: SSL certificates being ignored"
-        logger(None,cert_warn,cert_warn,None)
+        logger(None, cert_warn, cert_warn, None)
     return auth
 
 def toggle_debug():
@@ -299,24 +299,32 @@ def rename_instance(nova_client):
 
 # Web functions
 
-def create_dirauth(nova_client,config):
-    config['name'] = "dir_auth"
-    da_list = create_node(nova_client,config)
+def create_utilserv(nova_client,util_config):
+    util_config['name'] = "util_serv"
+    util_config['size'] = 1
+    util_list = create_node(nova_client,util_config)
+    return util_list
+
+def create_dirauth(nova_client,da_config):
+    da_config['name'] = "dir_auth"
+    da_config['size'] = da_config['das']
+    da_list = create_node(nova_client,da_config)
     return da_list
 
-def create_exitnode(nova_client,config):
-    config['name'] = "exit_node"
-    exit_list = create_node(nova_client,config)
+def create_exitnode(nova_client,exit_config):
+    exit_config['name'] = "exit_node"
+    nsize = exit_config['size'] - exit_config['das']
+    exit_list = create_node(nova_client,exit_config)
     return exit_list
 
-def create_relaynode(nova_client,config):
-    config['name'] = "relay_node"
-    relay_list = create_node(nova_client,config)
+def create_relaynode(nova_client,relay_config):
+    relay_config['name'] = "relay_node"
+    relay_list = create_node(nova_client,relay_config)
     return relay_list
 
-def create_clientnode(nova_client,config):
-    config['name'] = "client_node"
-    client_list = create_node(nova_client,config)
+def create_clientnode(nova_client,client_config):
+    client_config['name'] = "client_node"
+    client_list = create_node(nova_client,client_config)
     return client_list
 
 def create_node(nova_client,config):
@@ -346,9 +354,9 @@ def create_node(nova_client,config):
     node_name = config['name']
 
     if image is None:
-        image = nova_client.images.find(name="Ubuntu 14.04.4 Fresh Install")
+        image = nova_client.images.find(name="Ubuntu 14.04.4 LTS")
     if flavor is None:
-        flavor = nova_client.flavors.find(name="m1.small")
+        flavor = nova_client.flavors.find(name="m1.tiny")
     if netname is None:
         netname = nova_client.networks.find(label="Shared")
     nics = [{'net-id': netname.id}]
@@ -368,25 +376,70 @@ def create_node(nova_client,config):
 
 # Teardown functions
 
-def destroy_network(nova_client,img_name):
+def destroy_network(nova_client, node_list):
     """
 	   TODO: Determine paramters to base deletion on
 	"""
-    logger("Deleting node: " + img_name,"Network: Deleting node " + img_name,None,None)
-    nova_client.servers.delete(img_name)
-        
+    for key in node_list:
+        for e in node_list[key]:
+            nova_client.servers.delete(e.id)
     
 # Launch functions
 
-def web_launch(username,password,netname,modifier,size):
-    nova_client = create_novaclient(username,password)
+def web_launch(nova_client, img, flav, netname, modifier, size, num_das):
+    """
+        Called directly from the web interface. Creates nodes in the correct order
+        and returns a list of new nodes ot the web interface.
+
+        Args:
+            nova_client - instance of Openstack Nova client object
+            netname - name of network to use
+            modifier - name of script to use
+            size - size of network to create
+            num_das - number of directory authorities to create
+
+        Returns:
+            nodes - a dictionary of lists containing the newly created nodes
+    """
     logger("Nova client initialized by " + username + " from web UI",None,None,None)
     logger("Starting new network build of size " + str(size),None,None,None)
-    create_dirauth(nova_client,config)
-    create_exitnode(nova_client,config)
-    create_relaynode(nova_client,config)
-    create_clientnode(nova_client,config)
-	
+    
+    config = {'image': img,
+	      'flavor': flav,
+	      'netname': netname,
+	      'script': modifier,
+	      'size': size,
+              'das': num_das}
+
+    util_list = create_utilserv(nova_client, config)
+    da_list = create_dirauth(nova_client, config)
+    exit_list = create_exitnode(nova_client, config)
+    relay_list = create_relaynode(nova_client, config)
+    client_list = create_clientnode(nova_client, config)
+        
+    nodes = {'client': client_list,
+             'relay': relay_list,
+             'exit': exit_list,
+             'da': da_list,
+             'util': util_list}
+    
+    return nodes
+
+def web_dismantle(nova_client, node_list):
+    """
+        Called directly from the web interface. Destroys nodes in provided list
+
+        Args:
+            nova_client - instance of Openstack Nova client object
+            node_list - list of nodes to destroy
+
+        Returns:
+            None
+    """
+    destroy_network(nova_client, node_list)
+
+# Test functions
+
 def test_launch(username,password,img,flav,netname,modifier,size):
     nova_client = create_novaclient(username,password)
     config = {'image': img,

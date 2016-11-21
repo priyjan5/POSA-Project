@@ -16,17 +16,33 @@
 - import logging
 - from novaclient.client import Client
 
+## Guide
+
+To use the Tor network builder script use 'from launch import web_launch'
+This script takes the listed parameters and creates a Tor network of the 
+listed nodes. The web launch function will return a dictionary of lists
+containing the newly created nodes.
+
 ## Web UI Functions
 ### Launch
 - web_launch: Launches build functions for a new Tor network
   * Parameters: 
-    * username: RIT DCE username
-	* password: RIT DCE password
-	* img: Name of image in Openstack
-	* flav: Name of flavor in Openstack
-	* net: Name of network in Openstack
+    * nova_clinet: Openstack Nova client object
+	* img: Specifies which image to use
+	* flav: Specifies which flavor to use
+	* netname: Specifies which network to use
+	* modifier: Specifies which userdata script to use
 	* size: Total size of network being created
-
+	* num_das: Specifies number of directory authorities to create
+  * Returns:
+	* nodes: A dictionary of lists creating references to the new nodes
+	
+### Teardown
+- web_dismantle: Destroys nodes
+  * Paramters:
+	* nova_client: Openstack Nova client object
+	* node_list: List of nodes to be terminated
+	
 ## Command-line Functions
 ### Reporting
 - list_servers
@@ -45,11 +61,9 @@
   * Terminates an instance based on given name
   
 ## TODO
-- Fix rename_instance
 - Add JSON input support
 - Make instance creation more configurable
 - Add support for updating instances post-creation
-- Add userdata field in create_instance to pass post-creation scripts
   
 ## Reference
 - http://docs.openstack.org/developer/python-novaclient/ref/v2/client.html
