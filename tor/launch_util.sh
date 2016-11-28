@@ -29,11 +29,11 @@ echo tor:wordpass | chpasswd tor
 usermod -aG sudo tor
 
 echo "[!] Creating DAs file in /home/tor and correcting file permissions"
-cd /home/tor
-touch DAs
-chown tor DAs
-chgrp tor DAs
-chmod a+rw DAs
+
+touch /home/tor/DAs
+chown tor /home/tor/DAs
+chgrp tor /home/tor/DAs
+chmod a+rw /home/tor/DAs
 
 echo "[!] Utility Server has been deployed"
 echo "... end."
