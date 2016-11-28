@@ -10,6 +10,7 @@ import logging
 from novaclient.client import Client
 
 debug_on = False
+num_nodes = 0
 
 # Logging functions
 
@@ -299,31 +300,49 @@ def rename_instance(nova_client):
 
 # Web functions
 
-def create_utilserv(nova_client,util_config):
+def create_utilserv(nova_client, util_config):
     util_config['name'] = "util_serv"
     util_config['size'] = 1
+    global num_nodes
+    num_nodes = num_nodes - 1
     util_list = create_node(nova_client,util_config)
     return util_list
 
-def create_dirauth(nova_client,da_config):
+def create_dirauth(nova_client, da_config):
     da_config['name'] = "dir_auth"
-    da_config['size'] = da_config['das']
+    da_config['size'] = da_config['da_size']
+    global num_nodes
+    num_nodes = num_nodes - da_config['da_size']
     da_list = create_node(nova_client,da_config)
     return da_list
 
-def create_exitnode(nova_client,exit_config):
+def create_exitnode(nova_client, exit_config):
     exit_config['name'] = "exit_node"
-    nsize = exit_config['size'] - exit_config['das']
+    global num_nodes
+    n_size = int(num_nodes / 3)
+    num_nodes = num_nodes - n_size
+    exit_config['size'] = n_size
     exit_list = create_node(nova_client,exit_config)
     return exit_list
 
-def create_relaynode(nova_client,relay_config):
+def create_relaynode(nova_client, relay_config):
     relay_config['name'] = "relay_node"
+    global num_nodes
+    n_size = int(num_nodes / 2)
+    num_nodes = num_nodes - n_size
+    relay_config['size'] = n_size
     relay_list = create_node(nova_client,relay_config)
     return relay_list
 
-def create_clientnode(nova_client,client_config):
+def create_clientnode(nova_client, client_config):
     client_config['name'] = "client_node"
+    global num_nodes
+    n_size = int(num_nodes)
+    num_nodes = num_nodes - n_size
+    if num_nodes > 0:
+        n_size = n_size + 1
+        print(num_nodes)
+    client_config['size'] = n_size
     client_list = create_node(nova_client,client_config)
     return client_list
 
@@ -354,7 +373,7 @@ def create_node(nova_client,config):
     node_name = config['name']
 
     if image is None:
-        image = nova_client.images.find(name="Ubuntu 14.04.4 LTS")
+        image = nova_client.images.find(name="Ubuntu 16.04 LTS")
     if flavor is None:
         flavor = nova_client.flavors.find(name="m1.tiny")
     if netname is None:
@@ -386,7 +405,7 @@ def destroy_network(nova_client, node_list):
     
 # Launch functions
 
-def web_launch(nova_client, img, flav, netname, modifier, size, num_das):
+def web_launch(nova_client, img, flav, netname, modifier, size, da_size):
     """
         Called directly from the web interface. Creates nodes in the correct order
         and returns a list of new nodes ot the web interface.
@@ -396,7 +415,7 @@ def web_launch(nova_client, img, flav, netname, modifier, size, num_das):
             netname - name of network to use
             modifier - name of script to use
             size - size of network to create
-            num_das - number of directory authorities to create
+            da_size - number of directory authorities to create
 
         Returns:
             nodes - a dictionary of lists containing the newly created nodes
@@ -409,9 +428,11 @@ def web_launch(nova_client, img, flav, netname, modifier, size, num_das):
 	      'netname': netname,
 	      'script': modifier,
 	      'size': size,
-              'das': num_das}
+              'da_size': da_size}
 
-    util_list = create_utilserv(nova_client, config)
+    global num_nodes
+    num_nodes = config['size']
+
     da_list = create_dirauth(nova_client, config)
     exit_list = create_exitnode(nova_client, config)
     relay_list = create_relaynode(nova_client, config)
@@ -420,8 +441,7 @@ def web_launch(nova_client, img, flav, netname, modifier, size, num_das):
     nodes = {'client': client_list,
              'relay': relay_list,
              'exit': exit_list,
-             'da': da_list,
-             'util': util_list}
+             'da': da_list}
     
     return nodes
 
@@ -440,22 +460,37 @@ def web_dismantle(nova_client, node_list):
 
 # Test functions
 
-def test_launch(username,password,img,flav,netname,modifier,size):
+def test_launch(username,password,img,flav,netname,modifier,size,da_size):
     nova_client = create_novaclient(username,password)
+    
     config = {'image': img,
-			  'flavor': flav,
-			  'netname': netname,
-			  'script': modifier,
-			  'size': size}
-    client_list = create_clientnode(nova_client,config)
-    relay_list = create_relaynode(nova_client,config)
-    exit_list = create_exitnode(nova_client,config)
-    da_list = create_dirauth(nova_client,config)
+	      'flavor': flav,
+	      'netname': netname,
+	      'script': modifier,
+	      'size': size,
+              'da_size': da_size}
+
+    global num_nodes
+    num_nodes = config['size']
+                                    
+    util_list = create_utilserv(nova_client, config)
+    da_list = create_dirauth(nova_client, config)
+    exit_list = create_exitnode(nova_client, config)
+    relay_list = create_relaynode(nova_client, config)
+    client_list = create_clientnode(nova_client, config)
     nodes = {'client': client_list,
              'relay': relay_list,
              'exit': exit_list,
-             'da': da_list}
+             'da': da_list,
+             'util': util_list}
+
     return nodes
+
+def test_dismantle(username, password, node_list):
+    nova_client = create_novaclient(username,password)
+    destroy_network(nova_client, node_list)
+
+# Main
 
 if __name__ == '__main__':
     nova_client = create_novaclient(None,None)
