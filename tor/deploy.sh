@@ -161,6 +161,7 @@ if [ $ROLE == "DA" ]; then
 
 	# Generate Tor Certificates
 	echo "[!] Generating Tor Certificates"
+	chown root /var/lib/tor
 	echo "password" | tor-gencert --create-identity-key -m 12 -a ${TOR_IP}:${TOR_DIRPORT} \
 	-i ${KEYPATH}/authority_identity_key \
 	-s ${KEYPATH}/authority_signing_key \
