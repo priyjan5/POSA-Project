@@ -1,14 +1,22 @@
 #!/bin/bash
 
-# Welcome! T
+# Welcome! This script is used to deploy all of the roles tor can assume on an ubuntu machine, it supports:
+# DA - Directory Authority
+# RELAY - Relay node
+# EXIT - Exit node
+# CLIENT - A Client in the private network
+# HS - A hidden service
 #
-#
-#
-#
-#
-#
-#
-#
+# The script requires that a Utility server has been deployed using the launch_util.sh script
+# It takes two arguments the first is the above role you would like to deploy and the second is the ip address of the utility server
+# Example: bash deploy.sh DA 172.16.106.155 (Will deploy a directory authority with a utility ip of 172.16.106.155
+# Example: bash deploy.sh RELAY 172.16.106.155 (Will deploy a relay node with a utility ip of 172.16.106.155)
+
+# When run this script will install all of the necessary dependencies for tor including the binary itself and will scp the global DAs file from the utility server
+# to obtain the current list of Directory Authorities within the network. If you are deploying a directory authority the script will automatically generate its DA line
+# and store it in the global DAs file on the Util server.
+
+# There are different sections to this script depending on what role you deploy, there are global configuration options that need to be included in the torrc file
 
 
 
@@ -22,18 +30,20 @@
 #fi
 
 
+
+# Incase you are running this on a machine that has already been deployed it will remove any files that could cause problems
+# from previous deployments
+
 # Delete existing tor on box
-echo > /etc/tor/torrc
-rm -r /var/lib/tor/keys
-rm -r /tor
+echo > /etc/tor/torrc		# echo > onto any file will empty it out effectivly clearing torrc
+rm -r /var/lib/tor/keys		# Remove the keys directory incase it was a DA	
 
 # Define Variables
-ROLE=$1
-UTIL_SERVER=$2
-TOR_DIR="/var/lib/tor"
-TOR_ORPORT=7000
-TOR_DIRPORT=9898
-TORRC_CONFIG_DIR="/tor/config"
+ROLE=$1				# Role will either be DA, RELAY, CLIENT, EXIT, or HS passed in from the command line
+UTIL_SERVER=$2			# The IP address of the Utility server passed in from the command line
+TOR_DIR="/var/lib/tor"		# Defining the Tor directory
+TOR_ORPORT=7000			# Defining the Tor OrPort  (port number is arbitrary)
+TOR_DIRPORT=9898		# Defining the Tor DirPort (port number is arbitrary)
 
 
 echo -e "\n========================================================"
@@ -43,79 +53,86 @@ echo -e "\n========================================================"
 # Install Build Dependencies #
 ##############################
 
-echo "[!] Updating package manager"
-apt-get update > /dev/null
+#** Note the -y flag will auto install and not prompt if you are sure
 
-echo "[!] Installing tor"
-apt-get install -y tor > /dev/null
+echo "[!] Updating package manager"	
+apt-get update > /dev/null		#Update the package manager to ensure up-to-date installiations
+	
+echo "[!] Installing tor"		
+apt-get install -y tor > /dev/null	#Install Tor... I wonder why lol
 
-echo "[!] Installing pwgen to generate hostnames"
-apt-get install -y pwgen > /dev/null
-
-# See below for comment on git
-#echo "[!] Installing git"
-#apt-get install -y git > /dev/null
+echo "[!] Installing pwgen to generate hostnames"	
+apt-get install -y pwgen > /dev/null	# We use a program called pwgen to randomly create names for the relays, this program will spit out a random string of chrs
 
 echo "[!] Installing sshpass to auto login with sand ssh"
-apt-get install -y sshpass > /dev/null
+apt-get install -y sshpass > /dev/null	# sshpass is used to automatically scp into the util box without having to manually pass the password to the session
+					# this is used so we dont have to manually type in the password to the util server
 
 
-# Stop tor service
-#sudo service tor stop
-#echo "[!] chainging /var/lib/tor permissions to root"
-#chown root /var/lib/tor
 
-# Changed this so we no longer need to clone the git repo and install git, the repo is pulled once
-# when the util box is deployed and the update_torrc_DAs.sh script is moved into the utils apache web root allowing us
-# to wget it instead of pull down the entire git repo
+# In order to keep the torrc DA lines up to date we need to download the update_torrc_DAs.sh script which will automatically scp the DAs file from the Util box and add any
+# New DA lines to its torrc. This file is being hosted on the UTIL servers web server so all we need to do is wget it from the UTIL box and we just store it in the tor directory
 
 wget ${UTIL_SERVER}/torrc.da -P ${TOR_DIR}/
 wget ${UTIL_SERVER}/update_torrc_DAs.sh -P ${TOR_DIR}/
 chmod a+x ${TOR_DIR}/update_torrc_DAs.sh
-# Clone github repo
-#echo "[!] Cloning GIT Repo"
-#git clone https://github.com/98Giraffe/RIT_Capstone_2016.git
+
+# The intention is for the network to update automatically when new DAs are added therefore we create a cron job to run the update_torrc_DAs.sh file once a minute
 
 
-# Copying TOR folder from get to /
-#cp -r RIT*/tor /
+echo "[!] Creating cron job to update DA entries regurarly"
+# Adding update_torrc to cron job
+(crontab -l 2>/dev/null; echo "* * * * * ${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}") | crontab -
+
+
+
+
 
 
 #################################
 # Generate torrc common configs #
 #################################
 
+# This configs added to torrc in this section are global to all tor roles
+
+
+
 # Generate Nickname
-RPW=$(pwgen -0A 5)
+RPW=$(pwgen -0A 5)			#Here we generate a 5 character random string for the nodes name
+					#Node names are in the following format [ROLE][pwgen string]
+					# ex. DAmaoud (for a DA)
+					# ex. RELAYumbad (for a RELAY)
+					# ex. CLIENTqrage (for a CLIENT)
 
 # Export TOR_NICKNAME environment variable
-export TOR_NICKNAME=${ROLE}${RPW}
-echo "[!] Setting random Nickname: ${TOR_NICKNAME}"
+TOR_NICKNAME=${ROLE}${RPW}		# Setting the nickname equal to a variable
+echo "[!] Setting random Nickname: ${TOR_NICKNAME}"	
 
 # Add nickname to torrc
-echo -e "\nNickname ${TOR_NICKNAME}" >> /etc/tor/torrc
+echo -e "\nNickname ${TOR_NICKNAME}" >> /etc/tor/torrc	#Adding the nickname line to the torrc with the previously generated nickname
 	
 # Add data directory to torrc
-echo -e "DataDirectory ${TOR_DIR}" >> /etc/tor/torrc
+echo -e "DataDirectory ${TOR_DIR}" >> /etc/tor/torrc    # Adding DataDirectory line to torrc
 
-# Get IP
-# get ip using ip command consider editing to use ifconfig if ip addr is not aviable
-# Or other tool (kernel files?)
+# This line gets the IP address of the computer
+# Consider get ip using ip command consider editing to use ifconfig if ip addr is not aviable Or other tool (kernel files?)
 TOR_IP=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
 	
 # Add IP to torrc
 echo "[!] Setting IP to ${TOR_IP}"
-echo "Address ${TOR_IP}" >> /etc/tor/torrc
+echo "Address ${TOR_IP}" >> /etc/tor/torrc	#Adding the Address line to the torrc file
 
 # Add Control Port to torrc
-echo -e "ControlPort 0.0.0.0:9051" >> /etc/tor/torrc
+echo -e "ControlPort 0.0.0.0:9051" >> /etc/tor/torrc	#Adding the control port line to the torrc file
 
 # Add ContactInfo to torrc
-echo -e "ContactInfo kar@bar.gov" >> /etc/tor/torrc
+echo -e "ContactInfo kar@bar.gov" >> /etc/tor/torrc	#Adding the contact info line to torrc
 
 # Add TestingTorNetwork to torrc
-echo -e "TestingTorNetwork 1" >> /etc/tor/torrc
+echo -e "TestingTorNetwork 1" >> /etc/tor/torrc		#Adding the TestingTorNetwork line to torrc, see the TOR manual for mor information however this line will make the consensus process and the network creation faster
 
+#Below we setup the logging, all logs will go in /var/lib/tor/ and we are logging both notice and info
+#To view these when tor is running simply type 'tail -f /var/lib/tor/notice.log' for a live view into the file
 echo -e "Log notice file /var/lib/tor/notice.log" >> /etc/tor/torrc
 echo -e "Log info file /var/lib/tor/info.log" >> /etc/tor/torrc
 echo -e "ProtocolWarnings 1" >> /etc/tor/torrc
@@ -125,6 +142,10 @@ echo -e "SafeLogging 0" >> /etc/tor/torrc   				# SafeLogging shows full ip addr
 ##############################
 # DA Specific Configurations #
 ##############################
+#These commands and configurations are specific to Directory authorirites
+#DAs need to create keys and their DA config lines that go in the torrc and also need to upload these lines to the central DAs file on the Utility server
+
+
 
 if [ $ROLE == "DA" ]; then
 
@@ -267,9 +288,6 @@ if [ $ROLE == "HS" ]; then
 	
 fi
 
-echo "[!] Creating cron job to update DA entries regurarly"
-# Adding update_torrc to cron job
-(crontab -l 2>/dev/null; echo "* * * * * ${TOR_DIR}/update_torrc_DAs.sh ${UTIL_SERVER}") | crontab -
 
 echo "[!] Updating DAs list once before cron kicks in"
 # Update DAs in torrc
