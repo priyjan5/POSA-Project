@@ -305,12 +305,13 @@ def create_utilserv(nova_client, util_config):
     util_config['size'] = 1
     global num_nodes
     num_nodes = num_nodes - 1
-    util_list = create_node(nova_client,util_config)
+    util_list = create_node(nova_client, util_config)
     return util_list
 
 def create_dirauth(nova_client, da_config):
     da_config['name'] = "dir_auth"
     da_config['size'] = da_config['da_size']
+    da_config['script'] = "deploy.sh"
     global num_nodes
     num_nodes = num_nodes - da_config['da_size']
     da_list = create_node(nova_client,da_config)
@@ -318,6 +319,7 @@ def create_dirauth(nova_client, da_config):
 
 def create_exitnode(nova_client, exit_config):
     exit_config['name'] = "exit_node"
+    exit_config['script'] = "deploy.sh"
     global num_nodes
     n_size = int(num_nodes / 3)
     num_nodes = num_nodes - n_size
@@ -327,6 +329,7 @@ def create_exitnode(nova_client, exit_config):
 
 def create_relaynode(nova_client, relay_config):
     relay_config['name'] = "relay_node"
+    relay_config['script'] = "deploy.sh"
     global num_nodes
     n_size = int(num_nodes / 2)
     num_nodes = num_nodes - n_size
@@ -336,6 +339,7 @@ def create_relaynode(nova_client, relay_config):
 
 def create_clientnode(nova_client, client_config):
     client_config['name'] = "client_node"
+    client_config['script'] = "deploy.sh"
     global num_nodes
     n_size = int(num_nodes)
     num_nodes = num_nodes - n_size
@@ -346,7 +350,7 @@ def create_clientnode(nova_client, client_config):
     client_list = create_node(nova_client,client_config)
     return client_list
 
-def create_node(nova_client,config):
+def create_node(nova_client, config):
     """
         TODO: add error checking
 
@@ -368,9 +372,10 @@ def create_node(nova_client,config):
     image = config['image']
     flavor = config['flavor']
     netname = config['netname']
-    modifier = config['script']
+    deploy_script = config['script']
     size = config['size']
     node_name = config['name']
+    util_ip = config['util_ip']
 
     if image is None:
         image = nova_client.images.find(name="Ubuntu 16.04 LTS")
@@ -386,7 +391,7 @@ def create_node(nova_client,config):
                                               image=image,
                                               flavor=flavor,
                                               nics=nics,
-                                              userdata=modifier)
+                                              userdata=deploy_script)
         node_list.append(instance)
         time.sleep(5)
         logger(None,"Network: " + name + " node created",None,None)
@@ -405,7 +410,7 @@ def destroy_network(nova_client, node_list):
     
 # Launch functions
 
-def web_launch(nova_client, img, flav, netname, modifier, size, da_size):
+def web_launch(nova_client, img, flav, netname, util_ip, size, da_size):
     """
         Called directly from the web interface. Creates nodes in the correct order
         and returns a list of new nodes ot the web interface.
@@ -413,7 +418,7 @@ def web_launch(nova_client, img, flav, netname, modifier, size, da_size):
         Args:
             nova_client - instance of Openstack Nova client object
             netname - name of network to use
-            modifier - name of script to use
+            util_ip - IP address of the utility server
             size - size of network to create
             da_size - number of directory authorities to create
 
@@ -426,7 +431,7 @@ def web_launch(nova_client, img, flav, netname, modifier, size, da_size):
     config = {'image': img,
 	      'flavor': flav,
 	      'netname': netname,
-	      'script': modifier,
+	      'util_ip': util_ip,
 	      'size': size,
               'da_size': da_size}
 
@@ -460,13 +465,13 @@ def web_dismantle(nova_client, node_list):
 
 # Test functions
 
-def test_launch(username,password,img,flav,netname,modifier,size,da_size):
+def test_launch(username, password, img, flav, netname, util_ip, size, da_size):
     nova_client = create_novaclient(username,password)
     
     config = {'image': img,
 	      'flavor': flav,
 	      'netname': netname,
-	      'script': modifier,
+	      'util_ip': util_ip,
 	      'size': size,
               'da_size': da_size}
 
@@ -487,7 +492,7 @@ def test_launch(username,password,img,flav,netname,modifier,size,da_size):
     return nodes
 
 def test_dismantle(username, password, node_list):
-    nova_client = create_novaclient(username,password)
+    nova_client = create_novaclient(username, password)
     destroy_network(nova_client, node_list)
 
 # Main
