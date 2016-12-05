@@ -1,6 +1,6 @@
 """
    file: launch.py
-   vers: 1.8
+   vers: 2.0
    desc: Openstack Tor Network builder backend
 """
 
@@ -8,6 +8,8 @@ import time
 import getpass
 import logging
 from novaclient.client import Client
+
+# global variables
 
 debug_on = False
 num_nodes = 0
@@ -17,7 +19,7 @@ num_nodes = 0
 def logger(session, alert, bug, err):
     timestamp = time.strftime("%m%d%Y")
     logtime = time.strftime(" %H:%M.%S ")
-    fn = "tor_net_" + timestamp + ".log"
+    fn = "tornet_" + timestamp + ".log"
     logging.basicConfig(filename=fn, filemode='a', level=logging.DEBUG)
     """
        TODO: implement
@@ -36,8 +38,6 @@ def logger(session, alert, bug, err):
 
 def get_auth(username, password):
     """
-       TODO: remove hardcoded variables
-
        Dictionary for user authentication parameters
 
        Function of:
@@ -51,15 +51,17 @@ def get_auth(username, password):
        Returns:
            auth - dictionary for authenticating to openstack keyauth
     """
+    global project_id, auth_url, auth_vers, ssl_setting
+
     username = username + "@ad.rit.edu"
     auth = {}
-    auth['version'] = '2'
+    auth['version'] = auth_vers
     auth['insecure'] = True
     auth['username'] = username
     auth['password'] = password
-    auth['auth_url'] = 'https://acopenstack.rit.edu:5000/v2.0'
-    auth['project_id'] = 'jrh7130-multi'
-    if auth['insecure'] == True:
+    auth['auth_url'] = auth_url
+    auth['project_id'] = project_id
+    if auth['insecure'] == ssl_setting:
         cert_warn = "Connection: SSL certificates being ignored"
         logger(None, cert_warn, cert_warn, None)
     return auth
@@ -82,7 +84,7 @@ def create_novaclient(username,password):
         Function of:
            main
            web_launch
-           
+
         Args:
            none
 
@@ -92,8 +94,8 @@ def create_novaclient(username,password):
     if username is None:
         username = input("Enter username: ")
         password = getpass.getpass("Enter password: ")
-        logger("Nova client initialized by " + username + " from command line",None,None,None)
-    auth = get_auth(username,password)
+        logger("Nova client initialized by " + username + " from command line", None, None, None)
+    auth = get_auth(username, password)
     nova_client = Client(**auth)
     return nova_client
 
@@ -215,19 +217,17 @@ def instance_hub(nova_client):
             return
         else:
             print("\nInvalid option")
-    
+
 
 def create_instance(nova_client):
     """
        Creates an instance of given name, image and flavor
 
        Args:
-           name_in - name of new instance
-           img_in - name of image to use
-           flav_in - name of flavor to use
+           nova_client - instance of Openstack Nova Client object
 
         Returns:
-            none
+            None
     """
     try:
         name_in = input("Enter instance name: ")
@@ -240,7 +240,8 @@ def create_instance(nova_client):
         instance = nova_client.servers.create(name=name_in,
                                               image=image,
                                               flavor=flavor,
-                                              nics=nics)
+                                              nics=nics,
+                                              userdata=launch_script)
         time.sleep(5)
     finally:
         print("Instance Created")
@@ -306,40 +307,47 @@ def create_utilserv(nova_client, util_config):
     global num_nodes
     num_nodes = num_nodes - 1
     util_list = create_node(nova_client, util_config)
+
     return util_list
 
 def create_dirauth(nova_client, da_config):
     da_config['name'] = "dir_auth"
     da_config['size'] = da_config['da_size']
-    da_config['script'] = "deploy.sh"
+    modify_script("DA", client_config['util_ip'])
+
     global num_nodes
     num_nodes = num_nodes - da_config['da_size']
     da_list = create_node(nova_client,da_config)
+
     return da_list
 
 def create_exitnode(nova_client, exit_config):
     exit_config['name'] = "exit_node"
-    exit_config['script'] = "deploy.sh"
+    modify_script("EXIT", client_config['util_ip'])
+
     global num_nodes
     n_size = int(num_nodes / 3)
     num_nodes = num_nodes - n_size
     exit_config['size'] = n_size
     exit_list = create_node(nova_client,exit_config)
+
     return exit_list
 
 def create_relaynode(nova_client, relay_config):
     relay_config['name'] = "relay_node"
-    relay_config['script'] = "deploy.sh"
+    modify_script("RELAY", client_config['util_ip'])
+
     global num_nodes
     n_size = int(num_nodes / 2)
     num_nodes = num_nodes - n_size
     relay_config['size'] = n_size
     relay_list = create_node(nova_client,relay_config)
+
     return relay_list
 
 def create_clientnode(nova_client, client_config):
     client_config['name'] = "client_node"
-    client_config['script'] = "deploy.sh"
+    modify_script("CLIENT", client_config['util_ip'])
     global num_nodes
     n_size = int(num_nodes)
     num_nodes = num_nodes - n_size
@@ -347,7 +355,8 @@ def create_clientnode(nova_client, client_config):
         n_size = n_size + 1
         print(num_nodes)
     client_config['size'] = n_size
-    client_list = create_node(nova_client,client_config)
+    client_list = create_node(nova_client, client_config)
+
     return client_list
 
 def create_node(nova_client, config):
@@ -368,21 +377,22 @@ def create_node(nova_client, config):
         Returns:
             client_list - a list of client objects created
     """
+    global default_image, default_flavor, default_network, launch_script
+
     node_list = []
     image = config['image']
     flavor = config['flavor']
     netname = config['netname']
-    deploy_script = config['script']
     size = config['size']
     node_name = config['name']
     util_ip = config['util_ip']
 
     if image is None:
-        image = nova_client.images.find(name="Ubuntu 16.04 LTS")
+        image = nova_client.images.find(name=default_image)
     if flavor is None:
-        flavor = nova_client.flavors.find(name="m1.tiny")
+        flavor = nova_client.flavors.find(name=default_flavor)
     if netname is None:
-        netname = nova_client.networks.find(label="Shared")
+        netname = nova_client.networks.find(label=default_network)
     nics = [{'net-id': netname.id}]
 
     for i in range(0,size):
@@ -391,23 +401,178 @@ def create_node(nova_client, config):
                                               image=image,
                                               flavor=flavor,
                                               nics=nics,
-                                              userdata=deploy_script)
+                                              userdata=launch_script)
         node_list.append(instance)
         time.sleep(5)
-        logger(None,"Network: " + name + " node created",None,None)
+        logger(None, "Network: " + name + " node created", None, None)
 
     return node_list
+
+# File modifiers
+
+def modify_script(node_type, util_ip):
+    """
+        Modifies deploy.sh script to include correct node type and
+        utility server IP.
+
+        Args:
+            node_type - type of node being created
+            util_ip - IP address of the utility server
+
+        Returns:
+            None
+    """
+    global launch_script
+    line_num = 0
+    try:
+        with open(launch_script,'r') as script:
+            lines = []
+            for line in script:
+                lines.append(line)
+        script.close()
+    except:
+        err_msg = "Dependency error: Missing node launch script"
+        logger(None, None, err_msg, err_msg)
+    with open(launch_script,'w') as script:
+        for line in lines:
+            if line_num == 41:
+                script.write("ROLE=\"" + node_type + '\"\n')
+            elif line_num == 42:
+                script.write("UTIL_SERVER=" + str(util_ip) + '\n')
+            else:
+                script.write(line)
+            line_num = line_num + 1
+    script.close()
+
+def load_config_file():
+    global project_id, auth_url, auth_vers, ssl_setting, default_image, default_flavor, default_network, launch_script
+    try:
+        with open('torlaunch.conf','r') as config:
+            for line in config:
+                if "project_name" in line:
+                    spline = line.split(' ')
+                    try:
+                        project_id = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for project_name"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            project_id = project_id + " " + spline[i]
+                    project_id = project_id.strip()
+
+                elif "authentication_url" in line:
+                    spline = line.split(' ')
+                    try:
+                        auth_url = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for authentication_url"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            auth_url = auth_url + " " + spline[i]
+                    auth_url = auth_url.strip()
+
+                elif "authentication_version" in line:
+                    spline = line.split(' ')
+                    try:
+                        auth_vers = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for authentication_version"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            auth_vers = auth_vers + " " + spline[i]
+                    auth_vers = auth_vers.strip()
+
+                elif "ssl_cert_warnings" in line:
+                    spline = line.split(' ')
+                    try:
+                        ssl_setting = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for ssl_cert_warnings"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            ssl_setting = ssl_setting + " " + spline[i]
+                    if ssl_setting is "disabled":
+                        ssl_setting = True
+                    else:
+                        ssl_setting = False
+
+                elif "default_image" in line:
+                    spline = line.split(' ')
+                    try:
+                        default_image = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for default_image"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            default_image = default_image + " " + spline[i]
+                    default_image = default_image.strip()
+
+                elif "default_flavor" in line:
+                    spline = line.split(' ')
+                    try:
+                        default_flavor = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for default_flavor"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            default_flavor = default_flavor + " " + spline[i]
+                    default_flavor = default_flavor.strip()
+
+                elif "default_network" in line:
+                    spline = line.split(' ')
+                    try:
+                        default_network = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for default_network"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            default_network = default_network + " " + spline[i]
+                    default_network = default_network.strip()
+
+                elif "node_launch_script" in line:
+                    spline = line.split(' ')
+                    try:
+                        launch_script = spline[1]
+                    except:
+                        err_msg = "Config error: No value specified for node_launch_script"
+                        logger(None, None, err_msg, err_msg)
+                    if len(spline) > 2:
+                        for i in range(2, len(spline)):
+                            launch_script = launch_script + " " + spline[i]
+                    launch_script = launch_script.strip()
+
+                else:
+                    pass
+        config.close()
+
+    except:
+        err_msg = "Tried to load torlaunch.conf but no config file was found"
+        logger(None, None, err_msg, err_msg)
 
 # Teardown functions
 
 def destroy_network(nova_client, node_list):
     """
-	   TODO: Determine paramters to base deletion on
+        Deletes nodes by id.
+
+        Args:
+            nova_client - instance of Openstack Nova Client object
+            node_list - list of nodes to be removed
+
+        Returns:
+            None
 	"""
     for key in node_list:
         for e in node_list[key]:
             nova_client.servers.delete(e.id)
-    
+
 # Launch functions
 
 def web_launch(nova_client, img, flav, netname, util_ip, size, da_size):
@@ -425,14 +590,15 @@ def web_launch(nova_client, img, flav, netname, util_ip, size, da_size):
         Returns:
             nodes - a dictionary of lists containing the newly created nodes
     """
+    load_config_file()
     logger("Nova client initialized by " + username + " from web UI",None,None,None)
     logger("Starting new network build of size " + str(size),None,None,None)
-    
+
     config = {'image': img,
-	      'flavor': flav,
-	      'netname': netname,
-	      'util_ip': util_ip,
-	      'size': size,
+	          'flavor': flav,
+	          'netname': netname,
+              'util_ip': util_ip,
+              'size': size,
               'da_size': da_size}
 
     global num_nodes
@@ -442,12 +608,12 @@ def web_launch(nova_client, img, flav, netname, util_ip, size, da_size):
     exit_list = create_exitnode(nova_client, config)
     relay_list = create_relaynode(nova_client, config)
     client_list = create_clientnode(nova_client, config)
-        
+
     nodes = {'client': client_list,
              'relay': relay_list,
              'exit': exit_list,
              'da': da_list}
-    
+
     return nodes
 
 def web_dismantle(nova_client, node_list):
@@ -467,7 +633,7 @@ def web_dismantle(nova_client, node_list):
 
 def test_launch(username, password, img, flav, netname, util_ip, size, da_size):
     nova_client = create_novaclient(username,password)
-    
+
     config = {'image': img,
 	      'flavor': flav,
 	      'netname': netname,
@@ -477,7 +643,7 @@ def test_launch(username, password, img, flav, netname, util_ip, size, da_size):
 
     global num_nodes
     num_nodes = config['size']
-                                    
+
     util_list = create_utilserv(nova_client, config)
     da_list = create_dirauth(nova_client, config)
     exit_list = create_exitnode(nova_client, config)
@@ -498,6 +664,7 @@ def test_dismantle(username, password, node_list):
 # Main
 
 if __name__ == '__main__':
+    load_config_file()
     nova_client = create_novaclient(None,None)
     while(True):
         print("\nOpenstack SDK Backend - Main Menu")
