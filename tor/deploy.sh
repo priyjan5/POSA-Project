@@ -213,10 +213,7 @@ if [ $ROLE == "DA" ]; then
 	echo "[!] Uploading DirAuthoirty torrc config to util server"
 	echo $TORRC | sshpass -p "wordpass" ssh -oStrictHostKeyChecking=no tor@$UTIL_SERVER "cat >> ~/DAs"
 	
-	chown debian-tor /var/lib/tor/keys
-	chown debian-tor /var/lib/tor
-	cd /var/lib/tor/keys
-	chown debian-tor *
+	chown debian-tor -R /var/lib/tor
 	
 fi
 
