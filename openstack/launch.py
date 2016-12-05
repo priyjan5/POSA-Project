@@ -19,7 +19,7 @@ num_nodes = 0
 def logger(session, alert, bug, err):
     timestamp = time.strftime("%m%d%Y")
     logtime = time.strftime(" %H:%M.%S ")
-    fn = "tornet_" + timestamp + ".log"
+    fn = "tor_net_" + timestamp + ".log"
     logging.basicConfig(filename=fn, filemode='a', level=logging.DEBUG)
     """
        TODO: implement
@@ -348,6 +348,7 @@ def create_relaynode(nova_client, relay_config):
 def create_clientnode(nova_client, client_config):
     client_config['name'] = "client_node"
     modify_script("CLIENT", client_config['util_ip'])
+
     global num_nodes
     n_size = int(num_nodes)
     num_nodes = num_nodes - n_size
@@ -423,7 +424,6 @@ def modify_script(node_type, util_ip):
             None
     """
     global launch_script
-    line_num = 0
     try:
         with open(launch_script,'r') as script:
             lines = []
@@ -435,16 +435,24 @@ def modify_script(node_type, util_ip):
         logger(None, None, err_msg, err_msg)
     with open(launch_script,'w') as script:
         for line in lines:
-            if line_num == 41:
+            if "ROLE=" in line:
                 script.write("ROLE=\"" + node_type + '\"\n')
-            elif line_num == 42:
+            elif "UTIL_SERVER=" in line:
                 script.write("UTIL_SERVER=" + str(util_ip) + '\n')
             else:
                 script.write(line)
-            line_num = line_num + 1
     script.close()
 
 def load_config_file():
+    """
+        Loads parameters from the torlaunch.conf file
+
+        Args:
+            None
+
+        Returns:
+            None
+    """
     global project_id, auth_url, auth_vers, ssl_setting, default_image, default_flavor, default_network, launch_script
     try:
         with open('torlaunch.conf','r') as config:
@@ -591,8 +599,8 @@ def web_launch(nova_client, img, flav, netname, util_ip, size, da_size):
             nodes - a dictionary of lists containing the newly created nodes
     """
     load_config_file()
-    logger("Nova client initialized by " + username + " from web UI",None,None,None)
-    logger("Starting new network build of size " + str(size),None,None,None)
+    logger("Nova client initialized from web UI",None, None, None)
+    logger("Starting new network build of size " + str(size),None, None, None)
 
     config = {'image': img,
 	          'flavor': flav,
@@ -632,13 +640,16 @@ def web_dismantle(nova_client, node_list):
 # Test functions
 
 def test_launch(username, password, img, flav, netname, util_ip, size, da_size):
+    """
+        tests network launch
+    """
     nova_client = create_novaclient(username,password)
 
     config = {'image': img,
-	      'flavor': flav,
-	      'netname': netname,
-	      'util_ip': util_ip,
-	      'size': size,
+	          'flavor': flav,
+	          'netname': netname,
+	          'util_ip': util_ip,
+	          'size': size,
               'da_size': da_size}
 
     global num_nodes
@@ -656,10 +667,6 @@ def test_launch(username, password, img, flav, netname, util_ip, size, da_size):
              'util': util_list}
 
     return nodes
-
-def test_dismantle(username, password, node_list):
-    nova_client = create_novaclient(username, password)
-    destroy_network(nova_client, node_list)
 
 # Main
 
