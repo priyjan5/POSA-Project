@@ -17,13 +17,20 @@ num_nodes = 0
 # Logging functions
 
 def logger(session, alert, bug, err):
+    """
+        Logs session, alert, debug and error to log file
+
+        Args (strings):
+            session - session log message
+            alert - alert log message
+            bug - bug log message
+            err - error log message
+    """
     timestamp = time.strftime("%m%d%Y")
     logtime = time.strftime(" %H:%M.%S ")
     fn = "tor_net_" + timestamp + ".log"
     logging.basicConfig(filename=fn, filemode='a', level=logging.DEBUG)
-    """
-       TODO: implement
-    """
+
     if alert is not None:
         logging.warn(logtime + alert)
     if session is not None:
@@ -67,6 +74,10 @@ def get_auth(username, password):
     return auth
 
 def toggle_debug():
+    """
+        Sets a flag for debugging, if True logs will be sent to the
+        debug message log file.
+    """
     global debug_on
     if not debug_on:
         debug_on = True
@@ -301,19 +312,36 @@ def rename_instance(nova_client):
 
 # Web functions
 
-def create_utilserv(nova_client, util_config):
+def create_utilserv(nova_client, util_config, override_size):
     util_config['name'] = "util_serv"
-    util_config['size'] = 1
+    if override_size is not None:
+        util_config['size'] = override_size
+    else:
+        util_config['size'] = 1
     global num_nodes
     num_nodes = num_nodes - 1
     util_list = create_node(nova_client, util_config)
 
     return util_list
 
-def create_dirauth(nova_client, da_config):
+def create_hiddenservice(nova_client, hs_config, override_size):
+    hs_config['name'] = "hidden_service"
+    if override_size is not None:
+        hs_config['size'] = override_size
+    else:
+        hs_config['size'] = 1
+    hs_config['script'] = load_launch_script("HS", hs_config['util_ip'])
+    hs_list = create_node(nova_client, hs_config)
+
+    return hs_list
+
+def create_dirauth(nova_client, da_config, override_size):
     da_config['name'] = "dir_auth"
-    da_config['size'] = da_config['da_size']
-    modify_script("DA", client_config['util_ip'])
+    if override_size is not None:
+        da_config['size'] = override_size
+    else:
+        da_config['size'] = da_config['da_size']
+    da_config['script'] = load_launch_script("DA", da_config['util_ip'])
 
     global num_nodes
     num_nodes = num_nodes - da_config['da_size']
@@ -321,41 +349,46 @@ def create_dirauth(nova_client, da_config):
 
     return da_list
 
-def create_exitnode(nova_client, exit_config):
+def create_exitnode(nova_client, exit_config, override_size):
     exit_config['name'] = "exit_node"
-    modify_script("EXIT", client_config['util_ip'])
-
-    global num_nodes
-    n_size = int(num_nodes / 3)
-    num_nodes = num_nodes - n_size
-    exit_config['size'] = n_size
+    exit_config['script'] = load_launch_script("EXIT", exit_config['util_ip'])
+    if override_size is not None:
+        exit_config['size'] = override_size
+    else:
+        global num_nodes
+        n_size = int(num_nodes / 3)
+        num_nodes = num_nodes - n_size
+        exit_config['size'] = n_size
     exit_list = create_node(nova_client,exit_config)
 
     return exit_list
 
-def create_relaynode(nova_client, relay_config):
+def create_relaynode(nova_client, relay_config, override_size):
     relay_config['name'] = "relay_node"
-    modify_script("RELAY", client_config['util_ip'])
-
-    global num_nodes
-    n_size = int(num_nodes / 2)
-    num_nodes = num_nodes - n_size
-    relay_config['size'] = n_size
+    relay_config['script'] = load_launch_script("RELAY", relay_config['util_ip'])
+    if override_size is not None:
+        relay_config['size'] = override_size
+    else:
+        global num_nodes
+        n_size = int(num_nodes / 2)
+        num_nodes = num_nodes - n_size
+        relay_config['size'] = n_size
     relay_list = create_node(nova_client,relay_config)
 
     return relay_list
 
-def create_clientnode(nova_client, client_config):
+def create_clientnode(nova_client, client_config, overide_size):
     client_config['name'] = "client_node"
-    modify_script("CLIENT", client_config['util_ip'])
-
-    global num_nodes
-    n_size = int(num_nodes)
-    num_nodes = num_nodes - n_size
-    if num_nodes > 0:
-        n_size = n_size + 1
-        print(num_nodes)
-    client_config['size'] = n_size
+    client_config['script'] = load_launch_script("CLIENT", client_config['util_ip'])
+    if override_size is not None:
+        client_config['size'] = override_size
+    else:
+        global num_nodes
+        n_size = int(num_nodes)
+        num_nodes = num_nodes - n_size
+        if num_nodes > 0:
+            n_size = n_size + 1
+        client_config['size'] = n_size
     client_list = create_node(nova_client, client_config)
 
     return client_list
@@ -372,7 +405,7 @@ def create_node(nova_client, config):
                         * image - name of image to use
                         * flavor - name of flavor to use
                         * netname - name of network to use
-                        * modifier - name of launch script to use
+                        * script - name of launch script to use
                         * size - number of elements to create
 
         Returns:
@@ -402,7 +435,7 @@ def create_node(nova_client, config):
                                               image=image,
                                               flavor=flavor,
                                               nics=nics,
-                                              userdata=launch_script)
+                                              userdata=config['script'])
         node_list.append(instance)
         time.sleep(5)
         logger(None, "Network: " + name + " node created", None, None)
@@ -411,7 +444,7 @@ def create_node(nova_client, config):
 
 # File modifiers
 
-def modify_script(node_type, util_ip):
+def load_launch_script(node_type, util_ip):
     """
         Modifies deploy.sh script to include correct node type and
         utility server IP.
@@ -421,8 +454,9 @@ def modify_script(node_type, util_ip):
             util_ip - IP address of the utility server
 
         Returns:
-            None
+            deploy_script - a string value containing the script to run at launch
     """
+    load_config_file()
     global launch_script
     try:
         with open(launch_script,'r') as script:
@@ -433,15 +467,16 @@ def modify_script(node_type, util_ip):
     except:
         err_msg = "Dependency error: Missing node launch script"
         logger(None, None, err_msg, err_msg)
-    with open(launch_script,'w') as script:
-        for line in lines:
-            if "ROLE=" in line:
-                script.write("ROLE=\"" + node_type + '\"\n')
-            elif "UTIL_SERVER=" in line:
-                script.write("UTIL_SERVER=" + str(util_ip) + '\n')
-            else:
-                script.write(line)
-    script.close()
+    deploy_script = ""
+    for line in lines:
+        if "ROLE=" in line:
+            deploy_script = deploy_script + "ROLE=" + node_type + '\n'
+        elif "UTIL_SERVER=" in line:
+            deploy_script = deploy_script + "UTIL_SERVER=" + str(util_ip) + '\n'
+        else:
+            deploy_script = deploy_script + line
+
+    return deploy_script
 
 def load_config_file():
     """
@@ -612,10 +647,10 @@ def web_launch(nova_client, img, flav, netname, util_ip, size, da_size):
     global num_nodes
     num_nodes = config['size']
 
-    da_list = create_dirauth(nova_client, config)
-    exit_list = create_exitnode(nova_client, config)
-    relay_list = create_relaynode(nova_client, config)
-    client_list = create_clientnode(nova_client, config)
+    da_list = create_dirauth(nova_client, config, None)
+    exit_list = create_exitnode(nova_client, config, None)
+    relay_list = create_relaynode(nova_client, config, None)
+    client_list = create_clientnode(nova_client, config, None)
 
     nodes = {'client': client_list,
              'relay': relay_list,
