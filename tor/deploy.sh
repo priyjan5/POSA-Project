@@ -264,7 +264,7 @@ if [ $ROLE == "CLIENT" ]; then
 	echo "[!] Setting role to Client"
 	
 	# Set SOCKSPort in torrc
-	echo -e "SOCKSPort 0.0.0.0:9050" >> /etc/tor/torrc
+	echo -e "SOCKSPort 9050" >> /etc/tor/torrc
 
 fi
 
