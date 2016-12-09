@@ -123,7 +123,7 @@ echo "[!] Setting IP to ${TOR_IP}"
 echo "Address ${TOR_IP}" >> /etc/tor/torrc	#Adding the Address line to the torrc file
 
 # Add Control Port to torrc
-echo -e "ControlPort 0.0.0.0:9051" >> /etc/tor/torrc	#Adding the control port line to the torrc file
+echo -e "ControlPort 9051" >> /etc/tor/torrc	#Adding the control port line to the torrc file
 
 # Add ContactInfo to torrc
 echo -e "ContactInfo kar@bar.gov" >> /etc/tor/torrc	#Adding the contact info line to torrc
@@ -182,7 +182,7 @@ if [ $ROLE == "DA" ]; then
 
 	# Generate Tor Certificates
 	echo "[!] Generating Tor Certificates"
-	chown root /var/lib/tor
+	chown root -R /var/lib/tor
 	echo "password" | tor-gencert --create-identity-key -m 12 -a ${TOR_IP}:${TOR_DIRPORT} \
 	-i ${KEYPATH}/authority_identity_key \
 	-s ${KEYPATH}/authority_signing_key \
